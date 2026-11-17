@@ -209,6 +209,10 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .tool-def-name{font-size:12.5px;font-weight:600;color:var(--text);font-family:ui-monospace,Menlo,monospace}
 .tool-def-desc{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .tool-def-body{padding:2px 2px 8px 20px;display:flex;flex-direction:column;gap:6px}
+/* 详情面板快速滚动按钮 */
+.fastbtns{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
+.fastbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:color-mix(in srgb,var(--bg2) 88%,transparent);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.22)}
+.fastbtn:hover{color:var(--text);border-color:var(--accent)}
 .iotab:hover{color:var(--text)}
 .iotab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
 .acc-tools{display:flex;gap:6px;margin-left:auto}
@@ -939,6 +943,39 @@ function MarkdownView({ text }: { text: string }) {
 }
 
 /** 长文本折叠展示(点击展开);md=true 时按 Markdown 渲染 */
+/** 详情面板快速滚动按钮:↑ 回顶部 / ↓ 跳到底部(如最新一条用户消息);内容不可滚动时自动隐藏 */
+function FastScrollButtons({ containerRef }: { containerRef: { current: HTMLElement | null } }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    const check = () => {
+      const sc = containerRef.current?.querySelector<HTMLElement>(".acc-body");
+      setShow(!!sc && sc.scrollHeight > sc.clientHeight + 60);
+    };
+    check();
+    const mo = new MutationObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(check);
+    });
+    if (containerRef.current) mo.observe(containerRef.current, { childList: true, subtree: true });
+    return () => {
+      mo.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [containerRef]);
+  const go = (toTop: boolean) => {
+    const sc = containerRef.current?.querySelector<HTMLElement>(".acc-body");
+    if (!sc) return;
+    sc.scrollTo({ top: toTop ? 0 : sc.scrollHeight, behavior: "smooth" });
+  };
+  return (
+    <div class="fastbtns">
+      <button class="fastbtn" title="回到顶部" onClick={() => go(true)}>↑</button>
+      <button class="fastbtn" title="跳到底部" onClick={() => go(false)}>↓</button>
+    </div>
+  );
+}
+
 function PrettyText({ text, limit = 900, md = false }: { text: string; limit?: number; md?: boolean }) {
   const [open, setOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -1137,7 +1174,11 @@ function PrettyPayload({ payload }: { payload: unknown }) {
         {reasoning != null && (
           <div class="msg">
             <span class="msg-role role-reasoning">reasoning</span>
-            <div class="msg-body"><PrettyValue v={reasoning} /></div>
+            <div class="msg-body">
+              {typeof reasoning === "string"
+                ? <PrettyText text={reasoning} />
+                : <PrettyValue v={reasoning} />}
+            </div>
           </div>
         )}
         <PrettyMessage m={obj} />
@@ -1185,6 +1226,7 @@ const tryJson = (s: unknown) => {
 function TraceDetail({ projectId, traceId }: { projectId: string; traceId: string }) {
   const [d, setD] = useState<any>(null);
   const [sel, setSel] = useState<Obs | null>(null);
+  const cardWrapRef = useRef<HTMLDivElement | null>(null); // 详情卡片容器(快速滚动按钮定位)
   const [openKeys, setOpenKeys] = useState<Set<string> | null>(null); // 各 section 独立折叠;null=默认开第一个
   const [treeSeed, setTreeSeed] = useState<{ n: number; mode: JvMode }>({ n: 0, mode: "auto" }); // JSON 树全展开/全折叠
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set()); // 树:自由折叠(默认全展开)
@@ -1294,10 +1336,11 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
       <div class="vsplit" onMouseDown={startDrag} title="拖动调整树/面板占比"></div>
       <div class="col col-detail" style={`flex:${100 - treePct} 1 0`}>
         {sel ? (
-          <div class="card" style="margin:10px">
+          <div class="card" style="margin:10px;position:relative" ref={cardWrapRef}>
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex:none">
               <span class={`badge ${sel.type}`}>{sel.type}</span><b>{sel.name}</b>
             </div>
+            <FastScrollButtons containerRef={cardWrapRef} />
             <div class="iotabs">
               <span class={`iotab ${ioTab === "input" ? "on" : ""}`} onClick={() => { setIoTab("input"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Input</span>
               <span class={`iotab ${ioTab === "output" ? "on" : ""}`} onClick={() => { setIoTab("output"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Output</span>
