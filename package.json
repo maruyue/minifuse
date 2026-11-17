@@ -1,0 +1,21 @@
+{
+  "name": "minifuse",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build:ui": "bun build src/ui/main.tsx --minify --outdir dist/ui --format iife",
+    "build": "bun run build:ui && bun build --compile --minify src/main.ts --outfile minifuse",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@opentelemetry/otlp-transformer": "^0.200.0",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "@opentelemetry/sdk-trace-base": "^2.12.1",
+    "@types/bun": "latest",
+    "preact": "^10"
+  }
+}
