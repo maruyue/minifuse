@@ -143,6 +143,9 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .msg-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
 .ptext-body{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.65;color:var(--text)}
 .ptext-body .md{white-space:normal}
+/* 折叠态统一高度:与 system 卡(900 字符 md)的典型高度一致,底部渐隐提示可展开 */
+.ptext-clamped{max-height:460px;overflow:hidden;position:relative}
+.ptext-clamped::after{content:"";position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(transparent,var(--bg2));pointer-events:none}
 .md{font-size:12.5px;line-height:1.7;color:var(--text);min-width:0}
 .md p{margin:2px 0}
 .md .md-h{font-weight:700;margin:10px 0 4px;line-height:1.4;color:var(--text)}
@@ -953,7 +956,7 @@ function PrettyText({ text, limit = 900, md = false }: { text: string; limit?: n
   };
   return (
     <div class="ptext" ref={cardRef}>
-      <div class="ptext-body">{md ? <MarkdownView text={shown} /> : shown}</div>
+      <div class={`ptext-body ${long && !open ? "ptext-clamped" : ""}`}>{md ? <MarkdownView text={shown} /> : shown}</div>
       {long && (
         <button class="ghost ptext-more" onClick={toggle}>
           {open ? "收起" : `展开全部(${text.length} 字符)`}
@@ -1185,7 +1188,7 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
   const [openKeys, setOpenKeys] = useState<Set<string> | null>(null); // 各 section 独立折叠;null=默认开第一个
   const [treeSeed, setTreeSeed] = useState<{ n: number; mode: JvMode }>({ n: 0, mode: "auto" }); // JSON 树全展开/全折叠
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set()); // 树:自由折叠(默认全展开)
-  const [ioTab, setIoTab] = useState<"input" | "output" | "attrs">("input"); // 第四栏 Input/Output/Attributes tab
+  const [ioTab, setIoTab] = useState<"input" | "output">("input"); // 第四栏 Input/Output tab
   const [fmtMode, setFmtMode] = useState<"pretty" | "json">(() => ($<"pretty" | "json">("mf_fmt")) ?? "pretty"); // 格式化 / JSON
   useEffect(() => { save("mf_fmt", fmtMode); }, [fmtMode]);
   // 第3/4栏占比(可拖动,记忆)。用 flex-grow 比例分配剩余空间,避免 basis% 溢出把第4栏挤成 0
@@ -1298,33 +1301,12 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
             <div class="iotabs">
               <span class={`iotab ${ioTab === "input" ? "on" : ""}`} onClick={() => { setIoTab("input"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Input</span>
               <span class={`iotab ${ioTab === "output" ? "on" : ""}`} onClick={() => { setIoTab("output"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Output</span>
-              <span class={`iotab ${ioTab === "attrs" ? "on" : ""}`} onClick={() => { setIoTab("attrs"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Attributes</span>
-              {ioTab !== "attrs" && (
-                <div class="fmt-tabs" title="切换显示格式">
-                  <button class={`fmt-tab ${fmtMode === "pretty" ? "on" : ""}`} onClick={() => setFmtMode("pretty")}>格式化</button>
-                  <button class={`fmt-tab ${fmtMode === "json" ? "on" : ""}`} onClick={() => setFmtMode("json")}>JSON</button>
-                </div>
-              )}
+              <div class="fmt-tabs" title="切换显示格式">
+                <button class={`fmt-tab ${fmtMode === "pretty" ? "on" : ""}`} onClick={() => setFmtMode("pretty")}>格式化</button>
+                <button class={`fmt-tab ${fmtMode === "json" ? "on" : ""}`} onClick={() => setFmtMode("json")}>JSON</button>
+              </div>
             </div>
             {(() => {
-              if (ioTab === "attrs") {
-                const attrs = sel.attributes;
-                if (attrs == null || (typeof attrs === "object" && Object.keys(attrs).length === 0)) {
-                  return <div class="empty" style="padding:24px">该节点没有 attributes</div>;
-                }
-                return (
-                  <div class="acc-body">
-                    <div class="jv-tools">
-                      <span class="mini" onClick={() => setTreeSeed((s) => ({ n: s.n + 1, mode: "expand" }))}>展开全部</span>
-                      <span class="mini" onClick={() => setTreeSeed((s) => ({ n: s.n + 1, mode: "collapse" }))}>折叠全部</span>
-                      <span class="mini" onClick={() => copyText(sectionText(attrs))}>复制</span>
-                    </div>
-                    <div class="jv" key={`attrs-${sel.id}-${treeSeed.n}`}>
-                      <JvNode value={deepParseJson(attrs)} depth={0} mode={treeSeed.mode} />
-                    </div>
-                  </div>
-                );
-              }
               const payload = ioTab === "input" ? buildInputPayload(sel, d.observations) : buildOutputPayload(sel);
               if (payload === undefined || payload === null) {
                 return <div class="empty" style="padding:24px">该节点没有 {ioTab} 数据</div>;
@@ -1352,7 +1334,7 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
               );
             })()}
           </div>
-        ) : <div class="empty" style="padding-top:80px">← 点击树上节点<br />查看 input/output/attributes</div>}
+        ) : <div class="empty" style="padding-top:80px">← 点击树上节点<br />查看 input/output</div>}
         {d.scores?.length > 0 && (
           <div class="card"><h4>scores</h4>
             {d.scores.map((s: any) => <div>{s.name}: <b>{s.value ?? s.string_value}</b></div>)}
