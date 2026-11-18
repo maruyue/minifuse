@@ -211,8 +211,8 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .tool-def-body{padding:2px 2px 8px 20px;display:flex;flex-direction:column;gap:6px}
 /* 详情面板快速滚动按钮 */
 .fastbtns{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
-.fastbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:color-mix(in srgb,var(--bg2) 88%,transparent);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.22)}
-.fastbtn:hover{color:var(--text);border-color:var(--accent)}
+.fastbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.fastbtn:hover{border-color:var(--accent);color:var(--accent)}
 .iotab:hover{color:var(--text)}
 .iotab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
 .acc-tools{display:flex;gap:6px;margin-left:auto}
