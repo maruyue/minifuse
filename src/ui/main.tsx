@@ -1613,6 +1613,7 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
         <div class="rail" onClick={() => setFoldSess(false)} title="展开 Sessions">SESSIONS »</div>
       ) : (
         <div class="col col-sessions">
+          <div class="colhead">SESSIONS</div>
           <div class="sess-scroll">
             <div class="colhead">项目筛选</div>
             <div style="padding:0 10px 10px">
