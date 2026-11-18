@@ -1729,7 +1729,7 @@ function AdminPage({ onChanged, onBack }: { onChanged: () => void; onBack: () =>
   return (
     <main class="admin">
       <div style="margin-bottom:6px"><a href="#/" onClick={onBack}>← 返回工作区</a></div>
-      <div class="admin-head"><h2>管理项目</h2><span class="sub">project · 接入 key · observations 分区</span></div>
+      <div class="admin-head"><h2>项目管理</h2><span class="sub">project · 接入 key · observations 分区</span></div>
       {error && <div class="card" style="border-color:var(--danger);color:var(--b-err-fg);margin-bottom:14px">{error}</div>}
       {created && (
         <div class="card newkey-card" style="margin-bottom:14px">
