@@ -55,6 +55,7 @@ display:flex;align-items:center;justify-content:center;color:var(--muted);writin
 letter-spacing:3px;font-size:12px;padding:12px 0;user-select:none}
 .rail:hover{background:var(--sel);color:var(--btn-fg)}
 .colhead{padding:10px 12px 6px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;position:sticky;top:0;background:var(--bg-sticky);backdrop-filter:blur(3px);z-index:2;display:flex;align-items:center}
+.filter-label{padding:10px 12px 6px;color:var(--text);font-size:11px;letter-spacing:.4px;display:flex;align-items:center}
 .colhead .fold{margin-left:auto;cursor:pointer;padding:0 6px;border-radius:4px;color:var(--muted)}
 .colhead .fold:hover{background:var(--border2);color:var(--btn-fg)}
 .refresh-ico{margin-left:auto;cursor:pointer;display:flex;align-items:center;color:var(--muted);padding:2px 4px;border-radius:4px}
@@ -75,7 +76,7 @@ button.danger{background:var(--danger)}
 .sess-item:hover{background:var(--hover)}
 .sess-item.sel{background:var(--sel);border-left-color:var(--accent)}
 .sess-item .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sess-item .m{color:var(--muted);font-size:11px;margin-top:2px}
+.sess-item .m{color:var(--text);font-size:11px;margin-top:2px}
 .trace-row{padding:8px 12px;cursor:pointer;border-left:2px solid transparent;border-bottom:1px solid var(--border)}
 .trace-row:hover{background:var(--hover)}
 .trace-row.sel{background:var(--sel);border-left-color:var(--accent)}
@@ -1620,11 +1621,11 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
         <div class="col col-sessions">
           <div class="colhead">SESSIONS</div>
           <div class="sess-scroll">
-            <div class="colhead">项目筛选</div>
+            <div class="filter-label">项目筛选</div>
             <div style="padding:0 10px 10px">
               <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
             </div>
-            <div class="colhead">Session 筛选{sessFilter && sessions.length > 0 && (
+            <div class="filter-label">Session 筛选{sessFilter && sessions.length > 0 && (
               <span class="match-count">({sessions.length} 匹配)</span>
             )}</div>
             <div style="padding:0 10px 6px">
@@ -1646,7 +1647,7 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
             {sessCursor != null && (
               <div class="pager"><button class="ghost" onClick={loadMoreSessions}>Show more</button></div>
             )}
-            {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">暂无 session<br /><span style="font-size:11px">带 sessionId 的 trace 会自动聚合</span></div>}
+            {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">暂无 session</div>}
           </div>
           <SettingsMenu theme={theme} setTheme={setTheme} onAdmin={onAdmin} />
           <FoldHandle dir="left" onClick={() => setFoldSess(true)} title="收起 Sessions" />
