@@ -347,7 +347,8 @@ transform:translateY(-70%) rotate(45deg);pointer-events:none}
 .dd-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--input-bg);
 border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.32);z-index:50;
 padding:4px;max-height:280px;overflow:auto}
-.dd-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.dd-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center}
+.dd-dot{display:inline-block;width:16px;flex:none}
 .dd-item:hover{background:var(--hover)}
 .dd-item.on{background:var(--sel);font-weight:600}
 `;
@@ -455,7 +456,7 @@ function ProjectPicker({ projects, projectId, onChange }: { projects: Project[];
           {projects.map((p) => (
             <div class={`dd-item ${p.id === projectId ? "on" : ""}`}
               onClick={() => { setOpen(false); if (p.id !== projectId) onChange(p.id); }}>
-              {p.id === projectId ? "● " : ""}{p.name}
+              <span class="dd-dot">{p.id === projectId ? "●" : ""}</span>{p.name}
             </div>
           ))}
         </div>
