@@ -1625,7 +1625,7 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
             <div style="padding:0 10px 10px">
               <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
             </div>
-            <div class="filter-label">Session filter{sessFilter && sessions.length > 0 && (
+            <div class="filter-label">Filter{sessFilter && sessions.length > 0 && (
               <span class="match-count">({sessions.length} matches)</span>
             )}</div>
             <div style="padding:0 10px 16px">
