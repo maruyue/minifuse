@@ -1483,6 +1483,7 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
   // session 筛选:按 project 存 localStorage,下次进来保留;后端遍历该项目全部 session 做 LIKE 匹配
   const [sessFilter, setSessFilter] = useState(() => localStorage.getItem(`mf_sessfilter:${projectId}`) ?? "");
   const [sessFilterQ, setSessFilterQ] = useState(sessFilter); // 防抖后的查询词
+  const [sessLoading, setSessLoading] = useState(false);
   useEffect(() => {
     setSessFilter(localStorage.getItem(`mf_sessfilter:${projectId}`) ?? "");
   }, [projectId]);
@@ -1543,13 +1544,15 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
     else { setSessions([]); setSessionId(null); setTraceId(null); }
     const params = new URLSearchParams({ projectId, limit: "50" });
     if (sessFilterQ.trim()) params.set("q", sessFilterQ.trim());
+    setSessLoading(true);
     api(`/api/v1/sessions?${params}`).then((d) => {
       const items = d.items ?? [];
       setSessions(items);
       setSessCursor(d.nextCursor ?? null);
       // session 必选:加载后若当前未选/已失效,自动选第一个
       setSessionId((cur) => (cur && items.some((s) => s.id === cur) ? cur : (items[0]?.id ?? null)));
-    }).catch(() => { });
+      setSessLoading(false);
+    }).catch(() => { setSessLoading(false); });
   }, [projectId, sessFilterQ]);
   const loadMoreSessions = async () => {
     if (sessCursor == null) return;
@@ -1630,8 +1633,8 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
               <div class="muted" style="font-size:11px;padding:4px 2px 0">没有匹配的 session</div>
             )}
             </div>
-            {!sessionId && (
-              <div class="sess-item sel"><div class="m">{sessions.length ? "" : "加载 session 中…"}</div></div>
+            {!sessionId && sessLoading && (
+              <div class="sess-item sel"><div class="m">加载 session 中…</div></div>
             )}
             {sessions.map((s) => (
               <div class={`sess-item ${sessionId === s.id ? "sel" : ""}`} onClick={() => setSessionId(s.id)}>
