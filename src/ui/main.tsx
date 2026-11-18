@@ -213,7 +213,7 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .tool-def-desc{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .tool-def-body{padding:2px 2px 8px 20px;display:flex;flex-direction:column;gap:6px}
 /* session 筛选框 */
-.sess-search{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:5px 8px;outline:none}
+.sess-search{width:100%;box-sizing:border-box;background:var(--input-bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:12px;padding:8px 10px;min-height:36px;outline:none;box-shadow:var(--input-shadow);font-family:inherit}
 .sess-search:focus{border-color:var(--accent)}
 .sess-search::placeholder{color:var(--muted)}
 /* 详情面板快速滚动按钮 */
@@ -1613,11 +1613,12 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
         <div class="rail" onClick={() => setFoldSess(false)} title="展开 Sessions">SESSIONS »</div>
       ) : (
         <div class="col col-sessions">
-          <div class="pp">
-            <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
-          </div>
           <div class="sess-scroll">
-            <div class="colhead">Sessions</div>
+            <div class="colhead">项目筛选</div>
+            <div style="padding:0 10px 10px">
+              <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
+            </div>
+            <div class="colhead">Session 筛选</div>
             <div style="padding:0 10px 6px">
               <input class="sess-search" placeholder="按 session-id 片段筛选…" value={sessFilter}
                 onInput={(e: any) => onSessFilterInput(e.target.value)} />
