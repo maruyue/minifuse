@@ -1040,7 +1040,7 @@ function SettingsMenu({ theme, setTheme, onAdmin }: { theme: string; setTheme: (
         </div>
       )}
       <button class="theme-toggle" onClick={() => setOpen(!open)} title="设置">
-        ⚙ 设置
+        设置
       </button>
     </div>
   );
