@@ -235,7 +235,14 @@ export function buildApp(
     return c.json(d);
   });
 
-  query.get("/sessions", (c) => c.json({ items: listSessions(c.get("store")) }));
+  query.get("/sessions", (c) => {
+    const r = listSessions(c.get("store"), {
+      limit: Number(c.req.query("limit") ?? 50) || 50,
+      cursor: c.req.query("cursor") ? Number(c.req.query("cursor")) : undefined,
+      q: c.req.query("q") || undefined,
+    });
+    return c.json(r);
+  });
   query.get("/sessions/:id", (c) => {
     const r = listTraces(c.get("store"), { sessionId: c.req.param("id"), limit: 200 });
     return c.json({ sessionId: c.req.param("id"), traces: r.items });

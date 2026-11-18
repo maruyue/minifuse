@@ -90,7 +90,7 @@ test("跨分区详情:父 span 在旧分区、子 span 在新分区,聚合按 ob
     expect(list.items[0].input_tokens).toBe(150);
     expect(list.items[0].latency_ms).toBe(100);
 
-    const sessions = listSessions(store);
+    const sessions = listSessions(store).items;
     expect(sessions.length).toBe(1);
     expect(sessions[0].trace_count).toBe(1); // 单 trace 行,不因分区/批次多算
   } finally {
@@ -373,7 +373,7 @@ test("迁移:两个旧 shard 文件合并进 data.db,校验后删除旧文件", 
     expect(list.items.length).toBe(1);
     expect(list.items[0].input_tokens).toBe(150);
 
-    const sessions = listSessions(store);
+    const sessions = listSessions(store).items;
     expect(sessions.length).toBe(1);
     expect(sessions[0].trace_count).toBe(1);
   } finally {

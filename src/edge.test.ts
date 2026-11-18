@@ -360,7 +360,7 @@ test("sessions/:id 返回该 session 的 traces", async () => {
     const r = await (await app.request(`/api/v1/sessions/only-sess?projectId=${project.id}`)).json() as any;
     expect(r.sessionId).toBe("only-sess");
     expect(r.traces.length).toBe(3);
-    const l = listSessions(getProjectStore(meta, project.id));
+    const l = listSessions(getProjectStore(meta, project.id)).items;
     expect(l[0].trace_count).toBe(3);
   } finally {
     cleanup();

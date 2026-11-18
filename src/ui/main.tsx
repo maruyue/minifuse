@@ -1423,19 +1423,22 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
   const initQ = new URLSearchParams((location.hash.split("?")[1] ?? ""));
   const [projectId, setProjectId] = useState(() => initQ.get("project") ?? $<string>("mf_project") ?? projects[0]?.id);
   const [sessions, setSessions] = useState<any[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(initQ.get("session")); // null = 全部 traces
-  // session 筛选:按 project 存 localStorage,下次进来保留
+  const [sessCursor, setSessCursor] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(initQ.get("session")); // null = 加载中/无 session
+  // session 筛选:按 project 存 localStorage,下次进来保留;后端遍历该项目全部 session 做 LIKE 匹配
   const [sessFilter, setSessFilter] = useState(() => localStorage.getItem(`mf_sessfilter:${projectId}`) ?? "");
+  const [sessFilterQ, setSessFilterQ] = useState(sessFilter); // 防抖后的查询词
   useEffect(() => {
     setSessFilter(localStorage.getItem(`mf_sessfilter:${projectId}`) ?? "");
   }, [projectId]);
+  useEffect(() => {
+    const t = setTimeout(() => setSessFilterQ(sessFilter), 300);
+    return () => clearTimeout(t);
+  }, [sessFilter]);
   const onSessFilterInput = (v: string) => {
     setSessFilter(v);
     if (projectId) localStorage.setItem(`mf_sessfilter:${projectId}`, v);
   };
-  const shownSessions = sessFilter.trim()
-    ? sessions.filter((s) => String(s.id).toLowerCase().includes(sessFilter.trim().toLowerCase()))
-    : sessions;
   const [traces, setTraces] = useState<any[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [traceId, setTraceId] = useState<string | null>(initQ.get("trace"));
@@ -1471,18 +1474,38 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
     addEventListener("hashchange", onHash);
     return () => removeEventListener("hashchange", onHash);
   }, []);
+  // 合并 session 列表(fresh 覆盖同 id,保留 prev 独有项),按最近时间排序
+  const mergeSessions = (prev: any[], fresh: any[]): any[] => {
+    const byId = new Map(prev.map((s) => [s.id, s]));
+    for (const s of fresh) byId.set(s.id, s);
+    return [...byId.values()].sort((a, b) => b.last_ts - a.last_ts);
+  };
+  // sessions 第一页:projectId 或筛选词变化时触发;q 走后端 LIKE,遍历项目全部 session
   useEffect(() => {
     if (!projectId) return;
     // 首次挂载跳过清空(保留从 URL 恢复的选中),仅切换 project 时重置
     if (firstProjectRun.current) firstProjectRun.current = false;
     else { setSessions([]); setSessionId(null); setTraceId(null); }
-    // session 必选:加载后若当前未选/已失效,自动选第一个
-    api(`/api/v1/sessions?projectId=${projectId}`).then((d) => {
+    const params = new URLSearchParams({ projectId, limit: "50" });
+    if (sessFilterQ.trim()) params.set("q", sessFilterQ.trim());
+    api(`/api/v1/sessions?${params}`).then((d) => {
       const items = d.items ?? [];
       setSessions(items);
+      setSessCursor(d.nextCursor ?? null);
+      // session 必选:加载后若当前未选/已失效,自动选第一个
       setSessionId((cur) => (cur && items.some((s) => s.id === cur) ? cur : (items[0]?.id ?? null)));
     }).catch(() => { });
-  }, [projectId]);
+  }, [projectId, sessFilterQ]);
+  const loadMoreSessions = async () => {
+    if (sessCursor == null) return;
+    const params = new URLSearchParams({ projectId, limit: "50", cursor: String(sessCursor) });
+    if (sessFilterQ.trim()) params.set("q", sessFilterQ.trim());
+    try {
+      const d = await api(`/api/v1/sessions?${params}`);
+      setSessions((prev) => mergeSessions(prev, d.items ?? []));
+      setSessCursor(d.nextCursor ?? null);
+    } catch { }
+  };
   useEffect(() => {
     if (!projectId) return;
     const q = new URLSearchParams({ projectId, limit: "50" });
@@ -1503,7 +1526,10 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
         const fresh = (d.items ?? []).filter((t: any) => !known.has(t.id));
         return fresh.length ? [...fresh, ...prev] : prev;
       });
-      api(`/api/v1/sessions?projectId=${projectId}`).then((s) => setSessions(s.items ?? [])).catch(() => { });
+      api(`/api/v1/sessions?projectId=${projectId}&limit=50`).then((s) => {
+        // 轮询只合并第一页,保留已通过 Show more 加载的尾部
+        setSessions((prev) => mergeSessions(prev, s.items ?? []));
+      }).catch(() => { });
     } catch { }
   }, [projectId, sessionId]);
   useEffect(() => {
@@ -1538,22 +1564,24 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
               <input class="sess-search" placeholder="按 session-id 片段筛选…" value={sessFilter}
                 onInput={(e: any) => onSessFilterInput(e.target.value)} />
               {sessFilter && (
-                <div class="muted" style="font-size:11px;padding:4px 2px 0">
-                  {shownSessions.length}/{sessions.length} 个 session 匹配
-                </div>
-              )}
+              <div class="muted" style="font-size:11px;padding:4px 2px 0">
+                {sessions.length ? `已加载 ${sessions.length} 个匹配` : "没有匹配的 session"}
+              </div>
+            )}
             </div>
             {!sessionId && (
               <div class="sess-item sel"><div class="m">{sessions.length ? "" : "加载 session 中…"}</div></div>
             )}
-            {shownSessions.map((s) => (
+            {sessions.map((s) => (
               <div class={`sess-item ${sessionId === s.id ? "sel" : ""}`} onClick={() => setSessionId(s.id)}>
                 <div class="n" title={s.id}>{s.id}</div>
                 <div class="m">{s.trace_count_now ?? s.trace_count} traces · {fmtCost(s.total_cost)}<br />最近 {fmtTs(s.last_ts)}</div>
               </div>
             ))}
-            {sessions.length > 0 && !shownSessions.length && <div class="empty" style="padding:14px">没有匹配的 session</div>}
-            {!sessions.length && <div class="empty" style="padding:14px">暂无 session<br /><span style="font-size:11px">带 sessionId 的 trace 会自动聚合</span></div>}
+            {sessCursor != null && (
+              <div class="pager"><button class="ghost" onClick={loadMoreSessions}>Show more</button></div>
+            )}
+            {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">暂无 session<br /><span style="font-size:11px">带 sessionId 的 trace 会自动聚合</span></div>}
           </div>
           <button class="theme-toggle" onClick={onToggleTheme} title="切换深色/浅色主题">
             {theme === "dark" ? "🌙 dark" : "☀️ light"}
@@ -1582,7 +1610,7 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
             </div>
           ))}
           {!traces.length && <div class="empty">暂无 trace</div>}
-          {cursor && <div class="pager"><button class="ghost" onClick={loadMore}>加载更多 ↓</button></div>}
+          {cursor && <div class="pager"><button class="ghost" onClick={loadMore}>Show more</button></div>}
           <FoldHandle dir="left" onClick={() => setFoldTraces(true)} title="收起 Traces" />
         </div>
       )}

@@ -1059,16 +1059,40 @@ export function getTraceDetail(store: ProjectStore, traceId: string) {
   return { trace, observations, scores };
 }
 
-export function listSessions(store: ProjectStore, limit = 50) {
+export function listSessions(
+  store: ProjectStore,
+  opts: { limit?: number; cursor?: number; q?: string } = {},
+): { items: Array<ReturnType<typeof mapSessionRow>>; nextCursor: number | null } {
+  const limit = Math.min(Math.max(Math.floor(opts.limit ?? 50) || 50, 1), 500);
+  const q = (opts.q ?? "").trim();
+  const conds: string[] = ["session_id IS NOT NULL"];
+  const params: unknown[] = [];
+  if (q) { conds.push("session_id LIKE ?"); params.push(`%${q}%`); }
+  const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+  // cursor 作用于 last_ts(= MAX(start_time)),走 HAVING
+  const having = opts.cursor != null ? "HAVING MAX(start_time) < ?" : "";
+  const havingParams = opts.cursor != null ? [opts.cursor] : [];
   const rows = store.db
     .query(
       `SELECT session_id AS id, MIN(start_time) AS first_ts, MAX(start_time) AS last_ts,
               COUNT(*) AS cnt, COALESCE(SUM(total_cost),0) AS cost, MAX(user_id) AS user_id
-       FROM traces WHERE session_id IS NOT NULL
-       GROUP BY session_id ORDER BY last_ts DESC LIMIT ?`,
+       FROM traces ${where}
+       GROUP BY session_id
+       ${having}
+       ORDER BY last_ts DESC
+       LIMIT ?`,
     )
-    .all(limit) as any[];
-  return rows.map((r) => ({
+    .all(...params, ...havingParams, limit + 1) as any[];
+  let nextCursor: number | null = null;
+  if (rows.length > limit) {
+    rows.length = limit;
+    nextCursor = rows[rows.length - 1].last_ts;
+  }
+  return { items: rows.map(mapSessionRow), nextCursor };
+}
+
+function mapSessionRow(r: any) {
+  return {
     id: r.id,
     user_id: r.user_id,
     first_ts: r.first_ts,
@@ -1077,5 +1101,5 @@ export function listSessions(store: ProjectStore, limit = 50) {
     trace_count_now: r.cnt,
     total_cost: r.cost,
     updated_at: r.last_ts,
-  }));
+  };
 }
