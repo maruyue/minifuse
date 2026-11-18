@@ -216,6 +216,7 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .sess-search{width:100%;box-sizing:border-box;background:var(--input-bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:12px;padding:8px 10px;min-height:36px;outline:none;box-shadow:var(--input-shadow);font-family:inherit}
 .sess-search:focus{border-color:var(--accent)}
 .sess-search::placeholder{color:var(--muted)}
+.match-count{margin-left:6px;color:var(--accent,#4d9fff);font-weight:700;text-transform:none;letter-spacing:0}
 /* 详情面板快速滚动按钮 */
 .fastbtns{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
 .fastbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,color .15s}
@@ -1619,14 +1620,14 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
             <div style="padding:0 10px 10px">
               <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
             </div>
-            <div class="colhead">Session 筛选</div>
+            <div class="colhead">Session 筛选{sessFilter && sessions.length > 0 && (
+              <span class="match-count">({sessions.length} 匹配)</span>
+            )}</div>
             <div style="padding:0 10px 6px">
               <input class="sess-search" placeholder="按 session-id 片段筛选…" value={sessFilter}
                 onInput={(e: any) => onSessFilterInput(e.target.value)} />
-              {sessFilter && (
-              <div class="muted" style="font-size:11px;padding:4px 2px 0">
-                {sessions.length ? `已加载 ${sessions.length} 个匹配` : "没有匹配的 session"}
-              </div>
+              {sessFilter && sessions.length === 0 && (
+              <div class="muted" style="font-size:11px;padding:4px 2px 0">没有匹配的 session</div>
             )}
             </div>
             {!sessionId && (
