@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  openMeta, getProjectStore, writeBatch, writeScores, getTraceDetail, listTraces, listSessions,
+  openMeta, getProjectStore, writeBatch, getTraceDetail, listTraces, listSessions,
   dropProjectDb, rollObservationPartition, maybeRotateObservations, maintainProjectStorage,
   setMaxPartitions, storageStats, createObservationPartition, observationTableName,
   discoverPartitions, packJson,
@@ -349,7 +349,6 @@ test("迁移:两个旧 shard 文件合并进 data.db,校验后删除旧文件", 
       end_time: 1300, name: "llm-2", model: "claude", input_tokens: 50, output_tokens: 10,
       total_tokens: 60, total_cost: 0.02, level: "ERROR",
     });
-    s2.run(`INSERT INTO scores(id,trace_id,name,value,created_at) VALUES('sc1','t1','quality',1,1)`);
     s2.close();
 
     const store = getProjectStore(meta, "p1");
@@ -367,7 +366,6 @@ test("迁移:两个旧 shard 文件合并进 data.db,校验后删除旧文件", 
     expect(d.trace.input).toBe("hello");
     expect(d.trace.start_time).toBe(1000);
     expect(d.trace.end_time).toBe(1300);
-    expect(d.scores.map((s) => s.id)).toEqual(["sc1"]);
 
     const list = listTraces(store, {});
     expect(list.items.length).toBe(1);
@@ -391,10 +389,6 @@ test("storageStats 与不存在的 trace", () => {
 
     expect(getTraceDetail(store, "nope")).toBeNull();
 
-    writeScores(store, [{ id: "sc1", trace_id: "score-only", name: "quality", value: 1 }]);
-    const d = getTraceDetail(store, "score-only")!;
-    expect(d.trace.name).toBe("scored-trace");
-    expect(d.scores.length).toBe(1);
 
     setMaxPartitions(meta, "p1", 7);
     expect(storageStats(store).maxPartitions).toBe(7);

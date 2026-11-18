@@ -1463,11 +1463,6 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
             })()}
           </div>
         ) : <div class="empty" style="padding-top:80px">← Click a tree node<br />to view input/output</div>}
-        {d.scores?.length > 0 && (
-          <div class="card"><h4>scores</h4>
-            {d.scores.map((s: any) => <div>{s.name}: <b>{s.value ?? s.string_value}</b></div>)}
-          </div>
-        )}
       </div>
     </>
   );

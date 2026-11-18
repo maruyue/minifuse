@@ -6,11 +6,11 @@ import { Hono } from "hono";
 import { createHash } from "node:crypto";
 import type { MetaDb } from "./db";
 import {
-  getProjectStore, writeBatch, writeScores, listTraces, getTraceDetail, listSessions,
+  getProjectStore, writeBatch, listTraces, getTraceDetail, listSessions,
   dropProjectDb, setMaxPartitions, storageStats, MIN_PARTITIONS, MAX_PARTITIONS, type ProjectStore,
 } from "./db";
 import { decodeOtlp } from "./ingest/otlp";
-import { normalizeOtlp, normalizeRestTrace, normalizeRestScore, newId } from "./normalize";
+import { normalizeOtlp, normalizeRestTrace, newId } from "./normalize";
 
 export interface AppEnv {
   Variables: { projectId: string; store: ProjectStore; meta: MetaDb };
@@ -111,11 +111,8 @@ export function buildApp(
     return c.json({ status: "success" });
   });
 
+  // Langfuse 兼容:接受 scores 上报但不存储(minifuse 不做评分处理)
   app.post("/api/public/scores", pkAuth, async (c) => {
-    const items = await ingestBody(c);
-    if (!items) return c.json({ error: "Invalid JSON body" }, 400);
-    const scores = items.map(normalizeRestScore).filter(Boolean);
-    if (scores.length) writeScores(c.get("store"), scores);
     return c.json({ status: "success" });
   });
 

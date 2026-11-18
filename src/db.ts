@@ -1,11 +1,11 @@
 // 存储层:meta.db(projects + api_keys)+ 每 project 一个 SQLite 文件 data.db。
 // 只有 observations 按容量滚动成 observations_N 分区表(1GB/张,编号无限递增);
-// traces / sessions / scores 永远是单表。删 project = 删数据目录,零残留。
+// traces / sessions 永远是单表。删 project = 删数据目录,零残留。
 
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { TraceRow, ObservationRow, ScoreRow } from "./types";
+import type { TraceRow, ObservationRow } from "./types";
 
 export interface MetaDb {
   db: Database;
@@ -58,17 +58,6 @@ CREATE TABLE IF NOT EXISTS sessions(
   updated_at INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS scores(
-  id TEXT PRIMARY KEY,
-  trace_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  value REAL,
-  string_value TEXT,
-  data_type TEXT,                       -- NUMERIC | CATEGORICAL
-  comment TEXT,
-  created_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_scores_trace ON scores(trace_id);
 `;
 
 /** observations 分区表定义(编号从 1 开始,无限递增) */
@@ -109,10 +98,6 @@ const OBS_COLUMNS = [
   "cost", "total_cost", "input_tokens", "output_tokens", "total_tokens", "metadata", "attributes",
 ] as const;
 
-const SCORE_COLUMNS = [
-  "id", "trace_id", "name", "value", "string_value", "data_type", "comment", "created_at",
-] as const;
-
 const TRACE_COLUMNS = [
   "id", "start_time", "end_time", "name", "function_id", "user_id", "session_id", "release",
   "version", "environment", "bookmarked", "public", "tags", "metadata", "input", "output",
@@ -145,8 +130,10 @@ export function openMeta(dataDir: string): MetaDb {
     name TEXT,
     created_at INTEGER NOT NULL)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_keys_project ON api_keys(project_id)`);
-  // 清理历史残留:更早版本曾用 settings 表存自动生成的 admin token,现认证走环境变量
+  // 清理历史残留:settings 表(更早版本的 admin token 存储,现认证走环境变量)与
+  // scores 表(评分上报现已改为接受但不存储)
   db.run("DROP TABLE IF EXISTS settings");
+  db.run("DROP TABLE IF EXISTS scores");
   return { db, dataDir };
 }
 
@@ -246,6 +233,8 @@ function openProjectDb(path: string): { db: Database; partitions: ObservationPar
   db.run("PRAGMA journal_mode=WAL");
   db.exec(PROJECT_SCHEMA);
   ensureTracesColumns(db);
+  // 清理历史残留:评分功能已改为接受上报但不存储,scores 表不再存在
+  db.run("DROP TABLE IF EXISTS scores");
   let partitions = discoverPartitions(db);
   if (!partitions.length) {
     createObservationPartition(db, 1);
@@ -474,15 +463,6 @@ function insertObsRow(db: Database, table: string, row: any): void {
   );
 }
 
-function insertScoreRow(db: Database, row: any): void {
-  const cols = SCORE_COLUMNS.join(",");
-  const ph = SCORE_COLUMNS.map(() => "?").join(",");
-  db.run(
-    `INSERT OR IGNORE INTO scores(${cols}) VALUES(${ph})`,
-    SCORE_COLUMNS.map((c) => row[c] ?? null),
-  );
-}
-
 function insertTraceRow(db: Database, t: any): void {
   db.run(
     `INSERT OR REPLACE INTO traces(${TRACE_COLUMNS.join(",")}) VALUES(${TRACE_COLUMNS.map(() => "?").join(",")})`,
@@ -499,7 +479,7 @@ function insertTraceRow(db: Database, t: any): void {
 
 /**
  * 旧布局(projects/<id>/shard-*.db 或 projects/<id>.db)→ 单库 data.db。
- * 源文件按「新→旧」处理:traces 按 id 合并,observations/scores 同 id 新源优先。
+ * 源文件按「新→旧」处理:traces 按 id 合并,observations 同 id 新源优先;scores 不迁移(评分已不存储)。
  * 校验数量通过后才 rename + 删除源文件;任何异常都保留源文件。
  */
 function migrateLegacyProject(meta: MetaDb, projectId: string, dir: string, dbPath: string): void {
@@ -525,10 +505,8 @@ function migrateLegacyProject(meta: MetaDb, projectId: string, dir: string, dbPa
   const srcDbs: Database[] = [];
   const mergedTraces = new Map<string, any>();
   const obsIds = new Set<string>();
-  const scoreIds = new Set<string>();
   let traceSourceRows = 0;
   let obsSourceRows = 0;
-  let scoreSourceRows = 0;
 
   try {
     for (const srcPath of sources) {
@@ -554,15 +532,6 @@ function migrateLegacyProject(meta: MetaDb, projectId: string, dir: string, dbPa
             insertObsRow(dst, obsTable, raw);
           }
         }
-        if (tableExists(src, "scores")) {
-          for (const raw of src.query("SELECT * FROM scores").all() as any[]) {
-            scoreSourceRows++;
-            const id = String(raw.id);
-            if (scoreIds.has(id)) continue;
-            scoreIds.add(id);
-            insertScoreRow(dst, raw);
-          }
-        }
       });
       tx();
     }
@@ -582,15 +551,10 @@ function migrateLegacyProject(meta: MetaDb, projectId: string, dir: string, dbPa
 
     const dstTraceCount = Number((dst.query("SELECT COUNT(*) AS c FROM traces").get() as any).c);
     const dstObsCount = Number((dst.query(`SELECT COUNT(*) AS c FROM ${obsTable}`).get() as any).c);
-    const dstScoreCount = Number((dst.query("SELECT COUNT(*) AS c FROM scores").get() as any).c);
-    if (
-      dstTraceCount !== mergedTraces.size ||
-      dstObsCount !== obsIds.size ||
-      dstScoreCount !== scoreIds.size
-    ) {
+    if (dstTraceCount !== mergedTraces.size || dstObsCount !== obsIds.size) {
       throw new Error(
         `migration count mismatch: traces ${dstTraceCount}/${mergedTraces.size}, ` +
-          `observations ${dstObsCount}/${obsIds.size}, scores ${dstScoreCount}/${scoreIds.size}`,
+          `observations ${dstObsCount}/${obsIds.size}`,
       );
     }
 
@@ -645,7 +609,7 @@ function migrateLegacyProject(meta: MetaDb, projectId: string, dir: string, dbPa
   }
   console.log(
     `[migrate] project ${projectId}: ${traceSourceRows} rows / ${mergedTraces.size} traces, ` +
-      `${obsSourceRows} rows / ${obsIds.size} observations, ${scoreSourceRows} rows / ${scoreIds.size} scores ` +
+      `${obsSourceRows} rows / ${obsIds.size} observations ` +
       `(from ${sources.length} legacy file${sources.length > 1 ? "s" : ""})`,
   );
 }
@@ -685,12 +649,12 @@ export function unpackJson(v: unknown): unknown {
 
 export function writeBatch(
   store: ProjectStore,
-  batch: Array<{ trace: TraceRow; observations: ObservationRow[]; scores?: ScoreRow[] }>,
+  batch: Array<{ trace: TraceRow; observations: ObservationRow[] }>,
 ): void {
   const db = store.db;
   const now = Date.now();
   const tx = db.transaction(() => {
-    for (const { trace, observations, scores } of batch) {
+    for (const { trace, observations } of batch) {
       db.run(
         `INSERT INTO traces(id,start_time,end_time,name,function_id,user_id,session_id,release,version,
           environment,bookmarked,public,tags,metadata,input,output,model,
@@ -771,39 +735,7 @@ export function writeBatch(
           );
         }
       }
-      for (const s of scores ?? []) {
-        db.run(
-          `INSERT OR REPLACE INTO scores(id,trace_id,name,value,string_value,data_type,comment,created_at)
-           VALUES(?,?,?,?,?,?,?,?)`,
-          [s.id, s.trace_id, s.name, s.value ?? null, s.string_value ?? null,
-            s.data_type ?? (s.value != null ? "NUMERIC" : "CATEGORICAL"),
-            s.comment ?? null, s.created_at ?? now],
-        );
-      }
       if (trace.session_id) upsertSession(db, trace);
-    }
-  });
-  tx();
-}
-
-/** score-only 写入:trace 不存在则补占位行(INSERT OR IGNORE,不覆盖已有状态) */
-export function writeScores(store: ProjectStore, scores: ScoreRow[]): void {
-  const db = store.db;
-  const now = Date.now();
-  const tx = db.transaction(() => {
-    for (const s of scores) {
-      db.run(
-        `INSERT OR IGNORE INTO traces(id,start_time,name,status,created_at,updated_at)
-         VALUES(?,?,?,?,?,?)`,
-        [s.trace_id, s.created_at ?? now, "scored-trace", "success", now, now],
-      );
-      db.run(
-        `INSERT OR REPLACE INTO scores(id,trace_id,name,value,string_value,data_type,comment,created_at)
-         VALUES(?,?,?,?,?,?,?,?)`,
-        [s.id, s.trace_id, s.name, s.value ?? null, s.string_value ?? null,
-          s.data_type ?? (s.value != null ? "NUMERIC" : "CATEGORICAL"),
-          s.comment ?? null, s.created_at ?? now],
-      );
     }
   });
   tx();
@@ -1055,10 +987,8 @@ export function getTraceDetail(store: ProjectStore, traceId: string) {
     }
   }
   const observations = [...obsById.values()].sort((a, b) => a.start_time - b.start_time);
-  const scores = (store.db.query("SELECT * FROM scores WHERE trace_id = ?").all(traceId) as any[])
-    .sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
   reconcileTraceWithObservations(trace, observations);
-  return { trace, observations, scores };
+  return { trace, observations };
 }
 
 export function listSessions(

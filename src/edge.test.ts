@@ -152,7 +152,7 @@ test("REST:ISO 时间戳 + 顶层数组 batch + 字符串 usage 数字", async (
 
 // ---------- 4. score 变体 + 非法 score 被丢弃但不炸 ----------
 
-test("scores:字符串值 CATEGORICAL、非法项被丢弃、占位 trace 可查", async () => {
+test("scores:任意 payload 都被接受但不存储", async () => {
   const { meta, cleanup } = setup();
   try {
     const app = buildApp(meta, { js: "", css: "" });
@@ -168,19 +168,18 @@ test("scores:字符串值 CATEGORICAL、非法项被丢弃、占位 trace 可查
     const res = await app.request("/api/public/scores", {
       method: "POST", headers: H,
       body: JSON.stringify({ batch: [
-        { id: "s1", traceId: "st1", name: "category", stringValue: "good" }, // 无 value → CATEGORICAL
+        { id: "s1", traceId: "st1", name: "category", stringValue: "good" },
         { id: "s2", traceId: "st1", name: "stars", value: 4.5 },
-        { traceId: "st1" }, // 缺 name → 应被丢弃,不影响其他
+        { traceId: "st1" }, // 缺 name
         null, // 完全非法
       ]}),
     });
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "success" });
 
+    // 详情接口不再返回 scores 字段,数据库里也没有 scores 表
     const d = await (await app.request(`/api/v1/traces/st1?projectId=${project.id}`)).json() as any;
-    expect(d.scores.length).toBe(2);
-    const cat = d.scores.find((s: any) => s.id === "s1");
-    expect(cat.string_value).toBe("good");
-    expect(cat.data_type).toBe("CATEGORICAL");
+    expect(d.scores).toBeUndefined();
   } finally {
     cleanup();
   }

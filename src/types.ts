@@ -52,17 +52,6 @@ export interface ObservationRow {
   attributes?: unknown; // OTLP 原始 span attributes(透传)
 }
 
-export interface ScoreRow {
-  id: string;
-  trace_id: string;
-  name: string;
-  value?: number | null;
-  string_value?: string | null;
-  data_type?: string | null; // NUMERIC | CATEGORICAL
-  comment?: string | null;
-  created_at?: number;
-}
-
 export interface NormalizedBatch {
-  traces: Array<{ trace: TraceRow; observations: ObservationRow[]; scores?: ScoreRow[] }>;
+  traces: Array<{ trace: TraceRow; observations: ObservationRow[] }>;
 }

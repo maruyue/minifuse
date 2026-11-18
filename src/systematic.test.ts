@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  openMeta, getProjectStore, writeBatch, writeScores, getTraceDetail, listTraces, listSessions,
+  openMeta, getProjectStore, writeBatch, getTraceDetail, listTraces, listSessions,
   dropProjectDb, rollObservationPartition, setMaxPartitions, discoverPartitions,
   maintainProjectStorage, maybeRotateObservations, observationTableName,
 } from "./db";
@@ -149,28 +149,6 @@ test("最小保留 3:1/2 被 clamp,滚动不删未满 3 的分区", () => {
 });
 
 // ---------- 4. score 占位 → 真 trace 到达 ----------
-
-test("score 先到:占位 trace 被真数据补全,token/名称正确", () => {
-  const { store, cleanup } = setup();
-  try {
-    writeScores(store, [{ id: "sc1", trace_id: "late", name: "quality", value: 4 }]);
-    let d = getTraceDetail(store, "late")!;
-    expect(d.trace.name).toBe("scored-trace");
-    expect(d.scores.length).toBe(1);
-
-    rollObservationPartition(store); // 真 trace 落在第二个分区
-    writeBatch(store, [{
-      trace: trace({ id: "late", name: "real-name", timestamp: 3000, end_time: 3200, model: "claude", input_tokens: 10, output_tokens: 4 }),
-      observations: [gen({ id: "lo", trace_id: "late", name: "llm", start_ts: 3000, end_ts: 3200, model: "claude", input_tokens: 10, output_tokens: 4 })],
-    }]);
-    d = getTraceDetail(store, "late")!;
-    expect(d.trace.name).toBe("real-name"); // 真名覆盖占位名
-    expect(d.trace.input_tokens).toBe(10);
-    expect(d.scores.length).toBe(1);
-  } finally {
-    cleanup();
-  }
-});
 
 // ---------- 5. 多 trace 交错跨分区,列表聚合一一对应 ----------
 
@@ -383,11 +361,13 @@ test("HTTP:REST traces/observations/scores + 401 + 坏 JSON", async () => {
     });
     expect(r2.status).toBe(200);
 
+    // scores 上报:接受但不存储(minifuse 不做评分处理)
     const r3 = await app.request("/api/public/scores", {
       method: "POST", headers: H,
       body: JSON.stringify({ batch: [{ id: "rs1", traceId: "rt1", name: "rating", value: 5 }]}),
     });
     expect(r3.status).toBe(200);
+    expect(await r3.json()).toEqual({ status: "success" });
 
     const d = await (await app.request(`/api/v1/traces/rt1?projectId=${project.id}`)).json() as any;
     expect(d.observations.map((o: any) => o.id).sort()).toEqual(["ro1", "ro2", "ro3"]);
@@ -395,7 +375,7 @@ test("HTTP:REST traces/observations/scores + 401 + 坏 JSON", async () => {
     expect(d.trace.output_tokens).toBe(7);
     expect(d.trace.session_id).toBe("rsess");
     expect(d.trace.tags).toEqual(["rest"]);
-    expect(d.scores.length).toBe(1);
+    expect(d.scores).toBeUndefined();
 
     // 坏 JSON:应返回 400,而不是 500
     const bad = await app.request("/api/public/traces", {
@@ -403,7 +383,7 @@ test("HTTP:REST traces/observations/scores + 401 + 坏 JSON", async () => {
     });
     expect(bad.status).toBe(400);
     // 非 object body(batch 缺失)同样 400
-    const bad2 = await app.request("/api/public/scores", {
+    const bad2 = await app.request("/api/public/observations", {
       method: "POST", headers: H, body: '"just a string"',
     });
     expect(bad2.status).toBe(400);

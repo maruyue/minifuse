@@ -2,7 +2,7 @@
 // 规则参照 Litefuse packages/shared/src/server/otel/attributes.ts 与
 // OtelIngestionProcessor.ts 的兼容矩阵。
 
-import type { TraceRow, ObservationRow, ObservationType, NormalizedBatch, ScoreRow } from "./types";
+import type { TraceRow, ObservationRow, ObservationType, NormalizedBatch } from "./types";
 
 type Attrs = Record<string, unknown>;
 
@@ -420,24 +420,6 @@ export function normalizeRestTrace(item: RestTrace): NormalizedBatch["traces"][n
   trace.input_tokens = inTok || null;
   trace.output_tokens = outTok || null;
   return { trace, observations };
-}
-
-export function normalizeRestScore(item: any): ScoreRow | null {
-  if (!item?.traceId || !item?.name) return null;
-  // Langfuse REST:数值走 value,分类走 stringValue(双命名兼容)
-  const stringValue = item.stringValue ?? item.string_value ?? null;
-  const num = item.value != null ? Number(item.value) : null;
-  const value = num != null && Number.isFinite(num) ? num : null;
-  return {
-    id: item.id || newId(),
-    trace_id: item.traceId,
-    name: item.name,
-    value,
-    string_value: stringValue,
-    data_type: stringValue != null || value == null ? "CATEGORICAL" : "NUMERIC",
-    comment: item.comment ?? null,
-    created_at: ts(item.timestamp, Date.now()),
-  };
 }
 
 /** 回填用:从已有 span attributes 重新推导 observation 的可展示字段 */
