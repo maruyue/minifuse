@@ -326,7 +326,6 @@ background:var(--bg2);border:1px solid var(--border2);color:var(--text);cursor:p
 border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.32);z-index:60;padding:4px}
 .settings-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text)}
 .settings-item:hover{background:var(--hover)}
-.settings-ico{width:18px;text-align:center;flex:none}
 .settings-cur{margin-left:auto;color:var(--muted);font-size:11px}
 .pp{display:flex;gap:8px;padding:10px 12px 6px;flex:none;align-items:stretch}
 .dd{position:relative;flex:1;min-width:0}
@@ -1010,12 +1009,10 @@ function SettingsMenu({ theme, onToggleTheme, onAdmin }: { theme: string; onTogg
       {open && (
         <div class="settings-menu">
           <div class="settings-item" onClick={() => { onToggleTheme(); setOpen(false); }}>
-            <span class="settings-ico">{theme === "dark" ? "🌙" : "☀️"}</span>
             <span>外观主题</span>
             <span class="settings-cur">{theme === "dark" ? "深色" : "浅色"}</span>
           </div>
           <div class="settings-item" onClick={() => { setOpen(false); onAdmin(); }}>
-            <span class="settings-ico">🗂</span>
             <span>项目管理</span>
           </div>
         </div>
