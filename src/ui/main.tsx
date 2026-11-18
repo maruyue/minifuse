@@ -140,6 +140,9 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 [data-theme="light"] .role-tool{background:#fde68a;color:#92400e}
 [data-theme="light"] .role-toolcall{background:#e9d5ff;color:#6b21a8}
 [data-theme="light"] .role-reasoning{background:#e2e8f0;color:#475569}
+[data-theme="dark"] .role-err{background:#7f1d1d;color:#fee2e2}
+[data-theme="light"] .role-err{background:#fecaca;color:#7f1d1d}
+.err-body{border-color:#b91c1c !important;background:color-mix(in srgb,#dc2626 7%,var(--bg2)) !important}
 .msg-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
 .ptext-body{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.65;color:var(--text)}
 .ptext-body .md{white-space:normal}
@@ -211,8 +214,12 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .tool-def-body{padding:2px 2px 8px 20px;display:flex;flex-direction:column;gap:6px}
 /* 详情面板快速滚动按钮 */
 .fastbtns{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
-.fastbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35)}
-.fastbtn:hover{border-color:var(--accent);color:var(--accent)}
+.fastbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,color .15s}
+/* 深色主题:明显高于卡片底的实心圆 + 近白箭头,避免与卡片融为一体 */
+[data-theme=dark] .fastbtn{background:#242b35;border-color:#46505c;color:#f2f5f8;box-shadow:0 3px 14px rgba(0,0,0,.6)}
+[data-theme=dark] .fastbtn:hover{background:#303844;border-color:#58a6ff;color:#58a6ff}
+[data-theme=light] .fastbtn{background:#ffffff;border-color:#c3ccd5;color:#24292f;box-shadow:0 2px 10px rgba(31,35,40,.16)}
+[data-theme=light] .fastbtn:hover{background:#f6f8fa;border-color:#1f6feb;color:#1f6feb}
 .iotab:hover{color:var(--text)}
 .iotab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
 .acc-tools{display:flex;gap:6px;margin-left:auto}
@@ -970,8 +977,12 @@ function FastScrollButtons({ containerRef }: { containerRef: { current: HTMLElem
   };
   return (
     <div class="fastbtns">
-      <button class="fastbtn" title="回到顶部" onClick={() => go(true)}>↑</button>
-      <button class="fastbtn" title="跳到底部" onClick={() => go(false)}>↓</button>
+      <button class="fastbtn" title="回到顶部" aria-label="回到顶部" onClick={() => go(true)}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>
+      </button>
+      <button class="fastbtn" title="跳到底部" aria-label="跳到底部" onClick={() => go(false)}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="M19 12l-7 7-7-7" /></svg>
+      </button>
     </div>
   );
 }
@@ -1352,6 +1363,19 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
             {(() => {
               const payload = ioTab === "input" ? buildInputPayload(sel, d.observations) : buildOutputPayload(sel);
               if (payload === undefined || payload === null) {
+                // 失败节点没有 output/input 数据时,展示 status_message 里的错误详情
+                if (sel.level === "ERROR" && sel.status_message) {
+                  return (
+                    <div class="acc-body">
+                      <div class="pretty">
+                        <div class="msg">
+                          <span class="msg-role role-err">error</span>
+                          <div class="msg-body err-body"><PrettyText text={sel.status_message} /></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
                 return <div class="empty" style="padding:24px">该节点没有 {ioTab} 数据</div>;
               }
               if (fmtMode === "pretty") {
