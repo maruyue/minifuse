@@ -1476,7 +1476,12 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
     // 首次挂载跳过清空(保留从 URL 恢复的选中),仅切换 project 时重置
     if (firstProjectRun.current) firstProjectRun.current = false;
     else { setSessions([]); setSessionId(null); setTraceId(null); }
-    api(`/api/v1/sessions?projectId=${projectId}`).then((d) => setSessions(d.items ?? [])).catch(() => { });
+    // session 必选:加载后若当前未选/已失效,自动选第一个
+    api(`/api/v1/sessions?projectId=${projectId}`).then((d) => {
+      const items = d.items ?? [];
+      setSessions(items);
+      setSessionId((cur) => (cur && items.some((s) => s.id === cur) ? cur : (items[0]?.id ?? null)));
+    }).catch(() => { });
   }, [projectId]);
   useEffect(() => {
     if (!projectId) return;
@@ -1538,10 +1543,9 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
                 </div>
               )}
             </div>
-            <div class={`sess-item ${sessionId === null ? "sel" : ""}`} onClick={() => setSessionId(null)}>
-              <div class="n">全部 traces</div>
-              <div class="m">不过滤 session</div>
-            </div>
+            {!sessionId && (
+              <div class="sess-item sel"><div class="m">{sessions.length ? "" : "加载 session 中…"}</div></div>
+            )}
             {shownSessions.map((s) => (
               <div class={`sess-item ${sessionId === s.id ? "sel" : ""}`} onClick={() => setSessionId(s.id)}>
                 <div class="n" title={s.id}>{s.id}</div>
