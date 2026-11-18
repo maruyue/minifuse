@@ -1550,6 +1550,9 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
     api(`/api/v1/traces?${q}`).then((d) => { setTraces(d.items ?? []); setCursor(d.nextCursor); }).catch(() => { });
   }, [projectId, sessionId]);
   // 拉取最新 traces(增量 prepend,不打扰已加载内容);供手动 ⟳ 与自动轮询共用
+  // 供轮询读取的最新筛选词(ref 避免闭包陈旧)
+  const sessFilterRef = useRef(sessFilter);
+  useEffect(() => { sessFilterRef.current = sessFilter; }, [sessFilter]);
   const refreshLatest = useCallback(async () => {
     if (!projectId || document.visibilityState !== "visible") return;
     const q = new URLSearchParams({ projectId, limit: "50" });
@@ -1562,7 +1565,11 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
         const fresh = (d.items ?? []).filter((t: any) => !known.has(t.id));
         return fresh.length ? [...fresh, ...prev] : prev;
       });
-      api(`/api/v1/sessions?projectId=${projectId}&limit=50`).then((s) => {
+      // 轮询的 sessions 刷新必须带当前筛选词,否则会把不匹配的 session merge 回列表
+      const sp = new URLSearchParams({ projectId, limit: "50" });
+      const sf = sessFilterRef.current.trim();
+      if (sf) sp.set("q", sf);
+      api(`/api/v1/sessions?${sp}`).then((s) => {
         // 轮询只合并第一页,保留已通过 Show more 加载的尾部
         setSessions((prev) => mergeSessions(prev, s.items ?? []));
       }).catch(() => { });
