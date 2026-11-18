@@ -145,6 +145,8 @@ export function openMeta(dataDir: string): MetaDb {
     name TEXT,
     created_at INTEGER NOT NULL)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_keys_project ON api_keys(project_id)`);
+  // 清理历史残留:更早版本曾用 settings 表存自动生成的 admin token,现认证走环境变量
+  db.run("DROP TABLE IF EXISTS settings");
   return { db, dataDir };
 }
 
