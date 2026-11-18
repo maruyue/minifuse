@@ -1628,7 +1628,7 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
             <div class="filter-label">Session 筛选{sessFilter && sessions.length > 0 && (
               <span class="match-count">({sessions.length} 匹配)</span>
             )}</div>
-            <div style="padding:0 10px 6px">
+            <div style="padding:0 10px 16px">
               <input class="sess-search" placeholder="按 session-id 片段筛选…" value={sessFilter}
                 onInput={(e: any) => onSessFilterInput(e.target.value)} />
               {sessFilter && sessions.length === 0 && (
