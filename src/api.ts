@@ -254,6 +254,7 @@ export function buildApp(
   // ---------- UI ----------
   const indexHtml = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjMGIwZDEwIi8+CjxwYXRoIGQ9Ik0zNiA4IEwxOCAzNiBoMTAgTDI2IDU2IEw0NiAyNiBoLTExIEw0MiA4IFoiIGZpbGw9IiNmMmY1ZjgiLz4KPC9zdmc+">
 <title>minifuse</title><style>${uiAssets.css}</style></head>
 <body><div id="root"></div><script>${uiAssets.js}</script></body></html>`;
   app.get("/ui", (c) => c.html(indexHtml, 200, { "cache-control": "no-store" }));
