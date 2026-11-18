@@ -327,6 +327,12 @@ border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,
 .settings-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text)}
 .settings-item:hover{background:var(--hover)}
 .settings-cur{margin-left:auto;color:var(--muted);font-size:11px}
+.settings-static{cursor:default !important}
+.settings-static:hover{background:transparent !important}
+.settings-sub{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 18px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text)}
+.settings-sub:hover{background:var(--hover)}
+.settings-check{width:14px;flex:none;color:var(--accent);font-size:11px}
+.settings-sep{height:1px;background:var(--border);margin:4px 6px}
 .pp{display:flex;gap:8px;padding:10px 12px 6px;flex:none;align-items:stretch}
 .dd{position:relative;flex:1;min-width:0}
 .dd-btn{width:100%;text-align:left;display:flex;align-items:center;gap:8px;padding:8px 28px 8px 12px;min-height:36px;
@@ -993,7 +999,14 @@ function FastScrollButtons({ containerRef }: { containerRef: { current: HTMLElem
 }
 
 /** 底部「设置」按钮 + 弹出菜单:外观主题切换 / 项目管理 */
-function SettingsMenu({ theme, onToggleTheme, onAdmin }: { theme: string; onToggleTheme: () => void; onAdmin: () => void }) {
+const THEME_OPTIONS: Array<{ v: string; label: string }> = [
+  { v: "light", label: "浅色" },
+  { v: "dark", label: "深色" },
+  { v: "system", label: "跟随系统" },
+];
+
+/** 底部「设置」按钮 + 弹出菜单:外观主题(三选)/ 项目管理 */
+function SettingsMenu({ theme, setTheme, onAdmin }: { theme: string; setTheme: (t: string) => void; onAdmin: () => void }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -1004,14 +1017,22 @@ function SettingsMenu({ theme, onToggleTheme, onAdmin }: { theme: string; onTogg
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, [open]);
+  const themeLabel = THEME_OPTIONS.find((o) => o.v === theme)?.label ?? theme;
   return (
     <div class="settings-wrap" ref={wrapRef}>
       {open && (
         <div class="settings-menu">
-          <div class="settings-item" onClick={() => { onToggleTheme(); setOpen(false); }}>
+          <div class="settings-item settings-static">
             <span>外观主题</span>
-            <span class="settings-cur">{theme === "dark" ? "深色" : "浅色"}</span>
+            <span class="settings-cur">{themeLabel}</span>
           </div>
+          {THEME_OPTIONS.map((o) => (
+            <div class="settings-sub" key={o.v} onClick={() => { setTheme(o.v); }}>
+              <span class="settings-check">{theme === o.v ? "✓" : ""}</span>
+              <span>{o.label}</span>
+            </div>
+          ))}
+          <div class="settings-sep" />
           <div class="settings-item" onClick={() => { setOpen(false); onAdmin(); }}>
             <span>项目管理</span>
           </div>
@@ -1451,7 +1472,7 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
 
 /* ---------------- 三栏主界面 ---------------- */
 const ADMIN_OPT = "__admin__";
-function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Project[]; onAdmin: () => void; theme: string; onToggleTheme: () => void }) {
+function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]; onAdmin: () => void; theme: string; setTheme: (t: string) => void }) {
   // 初始状态从 URL 恢复(刷新不丢选中)
   const initQ = new URLSearchParams((location.hash.split("?")[1] ?? ""));
   const [projectId, setProjectId] = useState(() => initQ.get("project") ?? $<string>("mf_project") ?? projects[0]?.id);
@@ -1620,7 +1641,7 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
             )}
             {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">暂无 session<br /><span style="font-size:11px">带 sessionId 的 trace 会自动聚合</span></div>}
           </div>
-          <SettingsMenu theme={theme} onToggleTheme={onToggleTheme} onAdmin={onAdmin} />
+          <SettingsMenu theme={theme} setTheme={setTheme} onAdmin={onAdmin} />
           <FoldHandle dir="left" onClick={() => setFoldSess(true)} title="收起 Sessions" />
         </div>
       )}
@@ -1815,10 +1836,19 @@ function AdminPage({ onChanged, onBack }: { onChanged: () => void; onBack: () =>
 function App() {
   const [view, setView] = useState<"work" | "admin">(location.hash.includes("admin") ? "admin" : "work");
   const [projects, setProjects] = useState<Project[] | null>(null);
-  const [theme, setTheme] = useState<string>(() => $<string>("mf_theme") ?? "dark");
+  // 外观主题:light / dark / system(跟随系统,实时响应系统切换)
+  const [theme, setTheme] = useState<string>(() => $<string>("mf_theme") ?? "system");
   useEffect(() => {
     save("mf_theme", theme);
-    document.documentElement.dataset.theme = theme;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      document.documentElement.dataset.theme = theme === "system" ? (mql.matches ? "dark" : "light") : theme;
+    };
+    apply();
+    if (theme === "system") {
+      mql.addEventListener("change", apply);
+      return () => mql.removeEventListener("change", apply);
+    }
   }, [theme]);
   const refreshProjects = useCallback(() => {
     fetch("/api/v1/projects").then((r) => r.json()).then((d) => setProjects(d.projects ?? [])).catch(() => setProjects([]));
@@ -1830,7 +1860,6 @@ function App() {
     return () => removeEventListener("hashchange", on);
   }, [refreshProjects]);
 
-  const toggleTheme = () => setTheme((t: string) => (t === "dark" ? "light" : "dark"));
 
   if (view === "admin") {
     return <AdminPage onChanged={refreshProjects} onBack={() => { location.hash = "#/"; setView("work"); }} />;
@@ -1840,7 +1869,7 @@ function App() {
     return <AdminPage onChanged={refreshProjects} onBack={() => { refreshProjects(); }} />;
   }
   return <Workspace projects={projects} onAdmin={() => { location.hash = "#/admin"; setView("admin"); }}
-    theme={theme} onToggleTheme={toggleTheme} />;
+    theme={theme} setTheme={setTheme} />;
 }
 
 const styleEl = document.createElement("style");
