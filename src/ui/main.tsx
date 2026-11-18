@@ -54,7 +54,7 @@ color:var(--text);box-shadow:var(--input-shadow)}
 display:flex;align-items:center;justify-content:center;color:var(--muted);writing-mode:vertical-rl;
 letter-spacing:3px;font-size:12px;padding:12px 0;user-select:none}
 .rail:hover{background:var(--sel);color:var(--btn-fg)}
-.colhead{padding:10px 12px 6px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;position:sticky;top:0;background:var(--bg-sticky);backdrop-filter:blur(3px);z-index:2;display:flex;align-items:center}
+.colhead{min-height:35px;box-sizing:border-box;padding:8px 12px 6px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;position:sticky;top:0;background:var(--bg-sticky);backdrop-filter:blur(3px);z-index:2;display:flex;align-items:center}
 .filter-label{padding:10px 12px 6px;color:var(--text);font-size:11px;letter-spacing:.4px;display:flex;align-items:center}
 .colhead .fold{margin-left:auto;cursor:pointer;padding:0 6px;border-radius:4px;color:var(--muted)}
 .colhead .fold:hover{background:var(--border2);color:var(--btn-fg)}
@@ -450,7 +450,7 @@ function ProjectPicker({ projects, projectId, onChange }: { projects: Project[];
   return (
     <div class="dd">
       <button class="dd-btn" onClick={(e: any) => { e.stopPropagation(); setOpen(!open); }}>
-        <span class="nm">● {cur?.name ?? "选择项目"}</span>
+        <span class="nm">● {cur?.name ?? "Select project"}</span>
       </button>
       {open && (
         <div class="dd-menu">
@@ -873,7 +873,7 @@ function CodeBlockMd({ code, lang }: { code: string; lang?: string }) {
   };
   return (
     <div class="md-prewrap">
-      <div class="md-prehead"><span>{lang || "text"}</span><button class="md-precopy" onClick={copy}>{done ? "✓ 已复制" : "复制"}</button></div>
+      <div class="md-prehead"><span>{lang || "text"}</span><button class="md-precopy" onClick={copy}>{done ? "✓ Copied" : "Copy"}</button></div>
       <pre class="md-pre"><code dangerouslySetInnerHTML={{ __html: highlightCode(code, lang) }} /></pre>
     </div>
   );
@@ -991,10 +991,10 @@ function FastScrollButtons({ containerRef }: { containerRef: { current: HTMLElem
   };
   return (
     <div class="fastbtns">
-      <button class="fastbtn" title="回到顶部" aria-label="回到顶部" onClick={() => go(true)}>
+      <button class="fastbtn" title="Back to top" aria-label="Back to top" onClick={() => go(true)}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>
       </button>
-      <button class="fastbtn" title="跳到底部" aria-label="跳到底部" onClick={() => go(false)}>
+      <button class="fastbtn" title="Jump to bottom" aria-label="Jump to bottom" onClick={() => go(false)}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="M19 12l-7 7-7-7" /></svg>
       </button>
     </div>
@@ -1003,9 +1003,9 @@ function FastScrollButtons({ containerRef }: { containerRef: { current: HTMLElem
 
 /** 底部「设置」按钮 + 弹出菜单:外观主题切换 / 项目管理 */
 const THEME_OPTIONS: Array<{ v: string; label: string }> = [
-  { v: "light", label: "浅色" },
-  { v: "dark", label: "深色" },
-  { v: "system", label: "跟随系统" },
+  { v: "light", label: "Light" },
+  { v: "dark", label: "Dark" },
+  { v: "system", label: "System" },
 ];
 
 /** 底部「设置」按钮 + 弹出菜单:外观主题(三选)/ 项目管理 */
@@ -1026,7 +1026,7 @@ function SettingsMenu({ theme, setTheme, onAdmin }: { theme: string; setTheme: (
       {open && (
         <div class="settings-menu">
           <div class="settings-item settings-static">
-            <span>外观主题</span>
+            <span>Appearance</span>
             <span class="settings-cur">{themeLabel}</span>
           </div>
           {THEME_OPTIONS.map((o) => (
@@ -1037,12 +1037,12 @@ function SettingsMenu({ theme, setTheme, onAdmin }: { theme: string; setTheme: (
           ))}
           <div class="settings-sep" />
           <div class="settings-item" onClick={() => { setOpen(false); onAdmin(); }}>
-            <span>项目管理</span>
+            <span>Projects</span>
           </div>
         </div>
       )}
-      <button class="theme-toggle" onClick={() => setOpen(!open)} title="设置">
-        设置
+      <button class="theme-toggle" onClick={() => setOpen(!open)} title="Settings">
+        Settings
       </button>
     </div>
   );
@@ -1068,7 +1068,7 @@ function PrettyText({ text, limit = 900, md = false }: { text: string; limit?: n
       <div class={`ptext-body ${long && !open ? "ptext-clamped" : ""}`}>{md ? <MarkdownView text={shown} /> : shown}</div>
       {long && (
         <button class="ghost ptext-more" onClick={toggle}>
-          {open ? "收起" : `展开全部(${text.length} 字符)`}
+          {open ? "Collapse" : `Show all (${text.length} chars)`}
         </button>
       )}
     </div>
@@ -1285,7 +1285,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
     <div class="kv-row">
       <span class="lbl">{label}</span>
       <code title={value}>{value}</code>
-      <button class={`copybtn ${done ? "done" : ""}`} onClick={copy}>{done ? "✓ 已复制" : "复制"}</button>
+      <button class={`copybtn ${done ? "done" : ""}`} onClick={copy}>{done ? "✓ Copied" : "Copy"}</button>
     </div>
   );
 }
@@ -1338,14 +1338,14 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
     api(`/api/v1/traces/${traceId}?projectId=${projectId}`).then(setD)
       .catch((e) => setD({ error: String(e) }));
   }, [traceId]);
-  if (!d) return <div class="empty">加载中…</div>;
+  if (!d) return <div class="empty">Loading…</div>;
   if (d.error) {
     const msg = String(d.error);
     const notFound = msg.includes("404");
     return (
       <div class="empty">
         {notFound
-          ? <>该 trace 不存在<br /><span style="font-size:12px">项目可能已被删除,或 trace 已被保留策略清理;<br />请从左侧重新选择项目 / trace</span></>
+          ? <>Trace not found<br /><span style="font-size:12px">The project may have been deleted, or the trace<br />was removed by retention — pick another one on the left</span></>
           : <>✗ {msg}</>}
       </div>
     );
@@ -1405,7 +1405,7 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
           {roots.map((r) => <Node o={r} depth={0} />)}
         </div>
       </div>
-      <div class="vsplit" onMouseDown={startDrag} title="拖动调整树/面板占比"></div>
+      <div class="vsplit" onMouseDown={startDrag} title="Drag to resize tree/panel"></div>
       <div class="col col-detail" style={`flex:${100 - treePct} 1 0`}>
         {sel ? (
           <div class="card" style="margin:10px;position:relative" ref={cardWrapRef}>
@@ -1416,8 +1416,8 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
             <div class="iotabs">
               <span class={`iotab ${ioTab === "input" ? "on" : ""}`} onClick={() => { setIoTab("input"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Input</span>
               <span class={`iotab ${ioTab === "output" ? "on" : ""}`} onClick={() => { setIoTab("output"); setTreeSeed((s) => ({ n: s.n + 1, mode: "auto" })); }}>Output</span>
-              <div class="fmt-tabs" title="切换显示格式">
-                <button class={`fmt-tab ${fmtMode === "pretty" ? "on" : ""}`} onClick={() => setFmtMode("pretty")}>格式化</button>
+              <div class="fmt-tabs" title="Toggle display format">
+                <button class={`fmt-tab ${fmtMode === "pretty" ? "on" : ""}`} onClick={() => setFmtMode("pretty")}>Formatted</button>
                 <button class={`fmt-tab ${fmtMode === "json" ? "on" : ""}`} onClick={() => setFmtMode("json")}>JSON</button>
               </div>
             </div>
@@ -1437,7 +1437,7 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
                     </div>
                   );
                 }
-                return <div class="empty" style="padding:24px">该节点没有 {ioTab} 数据</div>;
+                return <div class="empty" style="padding:24px">No {ioTab} data for this node</div>;
               }
               if (fmtMode === "pretty") {
                 return (
@@ -1451,9 +1451,9 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
               return (
                 <div class="acc-body">
                   <div class="jv-tools">
-                    <span class="mini" onClick={() => setTreeSeed((s) => ({ n: s.n + 1, mode: "expand" }))}>展开全部</span>
-                    <span class="mini" onClick={() => setTreeSeed((s) => ({ n: s.n + 1, mode: "collapse" }))}>折叠全部</span>
-                    <span class="mini" onClick={() => copyText(sectionText(payload))}>复制</span>
+                    <span class="mini" onClick={() => setTreeSeed((s) => ({ n: s.n + 1, mode: "expand" }))}>Expand all</span>
+                    <span class="mini" onClick={() => setTreeSeed((s) => ({ n: s.n + 1, mode: "collapse" }))}>Collapse all</span>
+                    <span class="mini" onClick={() => copyText(sectionText(payload))}>Copy</span>
                   </div>
                   <div class="jv" key={`${sel.id}-${ioTab}-${treeSeed.n}`}>
                     <JvNode value={deepParseJson(payload)} depth={0} mode={treeSeed.mode} />
@@ -1462,7 +1462,7 @@ function TraceDetail({ projectId, traceId }: { projectId: string; traceId: strin
               );
             })()}
           </div>
-        ) : <div class="empty" style="padding-top:80px">← 点击树上节点<br />查看 input/output</div>}
+        ) : <div class="empty" style="padding-top:80px">← Click a tree node<br />to view input/output</div>}
         {d.scores?.length > 0 && (
           <div class="card"><h4>scores</h4>
             {d.scores.map((s: any) => <div>{s.name}: <b>{s.value ?? s.string_value}</b></div>)}
@@ -1616,51 +1616,51 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
     <div class="cols">
       {/* 第1栏:sessions(可折叠) */}
       {foldSess ? (
-        <div class="rail" onClick={() => setFoldSess(false)} title="展开 Sessions">SESSIONS »</div>
+        <div class="rail" onClick={() => setFoldSess(false)} title="Expand Sessions">SESSIONS »</div>
       ) : (
         <div class="col col-sessions">
           <div class="colhead">SESSIONS</div>
           <div class="sess-scroll">
-            <div class="filter-label">项目筛选</div>
+            <div class="filter-label">Project</div>
             <div style="padding:0 10px 10px">
               <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
             </div>
-            <div class="filter-label">Session 筛选{sessFilter && sessions.length > 0 && (
-              <span class="match-count">({sessions.length} 匹配)</span>
+            <div class="filter-label">Session filter{sessFilter && sessions.length > 0 && (
+              <span class="match-count">({sessions.length} matches)</span>
             )}</div>
             <div style="padding:0 10px 16px">
-              <input class="sess-search" placeholder="按 session-id 片段筛选…" value={sessFilter}
+              <input class="sess-search" placeholder="Filter by session id…" value={sessFilter}
                 onInput={(e: any) => onSessFilterInput(e.target.value)} />
               {sessFilter && sessions.length === 0 && (
-              <div class="muted" style="font-size:11px;padding:4px 2px 0">没有匹配的 session</div>
+              <div class="muted" style="font-size:11px;padding:4px 2px 0">No matching sessions</div>
             )}
             </div>
             {!sessionId && sessLoading && (
-              <div class="sess-item sel"><div class="m">加载 session 中…</div></div>
+              <div class="sess-item sel"><div class="m">Loading sessions…</div></div>
             )}
             {sessions.map((s) => (
               <div class={`sess-item ${sessionId === s.id ? "sel" : ""}`} onClick={() => setSessionId(s.id)}>
                 <div class="n" title={s.id}>{s.id}</div>
-                <div class="m">{s.trace_count_now ?? s.trace_count} traces · {fmtCost(s.total_cost)}<br />最近 {fmtTs(s.last_ts)}</div>
+                <div class="m">{s.trace_count_now ?? s.trace_count} traces · {fmtCost(s.total_cost)}<br />last {fmtTs(s.last_ts)}</div>
               </div>
             ))}
             {sessCursor != null && (
               <div class="pager"><button class="ghost" onClick={loadMoreSessions}>Show more</button></div>
             )}
-            {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">暂无 session</div>}
+            {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">No sessions yet</div>}
           </div>
           <SettingsMenu theme={theme} setTheme={setTheme} onAdmin={onAdmin} />
-          <FoldHandle dir="left" onClick={() => setFoldSess(true)} title="收起 Sessions" />
+          <FoldHandle dir="left" onClick={() => setFoldSess(true)} title="Collapse Sessions" />
         </div>
       )}
 
       {/* 第2栏:traces(可折叠) */}
       {foldTraces ? (
-        <div class="rail" onClick={() => setFoldTraces(false)} title="展开 Traces">TRACES »</div>
+        <div class="rail" onClick={() => setFoldTraces(false)} title="Expand Traces">TRACES »</div>
       ) : (
         <div class="col col-traces">
           <div class="colhead">Traces{sessionId ? ` · ${String(sessionId).slice(0, 8)}…` : ""}
-            <span class="refresh-ico" onClick={() => { refreshLatest(); }} title="拉取最新 traces">
+            <span class="refresh-ico" onClick={() => { refreshLatest(); }} title="Refresh traces">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </span></div>
           {traces.map((t) => (
@@ -1673,9 +1673,9 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
               </div>
             </div>
           ))}
-          {!traces.length && <div class="empty">暂无 trace</div>}
+          {!traces.length && <div class="empty">No traces yet</div>}
           {cursor && <div class="pager"><button class="ghost" onClick={loadMore}>Show more</button></div>}
-          <FoldHandle dir="left" onClick={() => setFoldTraces(true)} title="收起 Traces" />
+          <FoldHandle dir="left" onClick={() => setFoldTraces(true)} title="Collapse Traces" />
         </div>
       )}
 
@@ -1683,7 +1683,7 @@ function Workspace({ projects, onAdmin, theme, setTheme }: { projects: Project[]
       {traceId && projectId
         ? <TraceDetail projectId={projectId} traceId={traceId} />
         : <>
-            <div class="col col-tree"><div class="empty" style="padding-top:80px">← 选择一条 trace 查看调用树</div></div>
+            <div class="col col-tree"><div class="empty" style="padding-top:80px">← Select a trace to view its tree</div></div>
             <div class="col col-detail" />
           </>}
     </div>
@@ -1710,7 +1710,7 @@ function AdminPage({ onChanged, onBack }: { onChanged: () => void; onBack: () =>
   }, []);
   const safe = useCallback(async (fn: () => Promise<void>) => {
     try { setError(null); await fn(); }
-    catch (e: any) { setError(`操作失败:${String(e?.message ?? e).slice(0, 160)}`); }
+    catch (e: any) { setError(`Failed: ${String(e?.message ?? e).slice(0, 160)}`); }
   }, []);
   const refresh = useCallback(async () => {
     await safe(async () => setProjects((await api("/api/v1/admin/projects")).projects));
@@ -1730,71 +1730,71 @@ function AdminPage({ onChanged, onBack }: { onChanged: () => void; onBack: () =>
     loadKeys(p.id); refresh();
   });
   const mkProject = () => safe(async () => {
-    if (!newName.trim()) { setError("请先填写 project 名称"); return; }
+    if (!newName.trim()) { setError("Project name is required"); return; }
     await api("/api/v1/admin/projects", { method: "POST", body: JSON.stringify({ name: newName.trim() }) });
     setNewName(""); refresh(); onChanged();
   });
   return (
     <main class="admin">
-      <div style="margin-bottom:6px"><a href="#/" onClick={onBack}>← 返回工作区</a></div>
-      <div class="admin-head"><h2>项目管理</h2><span class="sub">project · 接入 key · observations 分区</span></div>
+      <div style="margin-bottom:6px"><a href="#/" onClick={onBack}>← Back to workspace</a></div>
+      <div class="admin-head"><h2>Projects</h2><span class="sub">projects · access keys · observation partitions</span></div>
       {error && <div class="card" style="border-color:var(--danger);color:var(--b-err-fg);margin-bottom:14px">{error}</div>}
       {created && (
         <div class="card newkey-card" style="margin-bottom:14px">
-          <h4 style="color:var(--b-span-fg);margin-bottom:6px">✓ 新 key 已生成(仅显示一次)— 请立即复制保存</h4>
+          <h4 style="color:var(--b-span-fg);margin-bottom:6px">✓ New key generated (shown once) — copy and save it now</h4>
           <div class="kv-row"><span class="lbl">project</span><code>{created.project.name}</code></div>
           <CopyRow label="public" value={created.key.publicKey} />
           <CopyRow label="secret" value={created.key.secretKey} />
         </div>
       )}
       <div class="sect">
-        <h4>新建项目</h4>
+        <h4>New project</h4>
         <div class="newbar">
-          <input placeholder="项目名称,如 cappy-agent" value={newName} onInput={(e: any) => setNewName(e.target.value)}
+          <input placeholder="Project name, e.g. cappy-agent" value={newName} onInput={(e: any) => setNewName(e.target.value)}
             onKeyDown={(e: any) => { if (e.key === "Enter") mkProject(); }} />
-          <button onClick={mkProject}>新建</button>
+          <button onClick={mkProject}>Create</button>
         </div>
       </div>
       <div class="sect">
-        <h4>key 管理</h4>
+        <h4>Access keys</h4>
         {projects.map((p: any) => (
           <div class="proj-card">
             <div class="proj-row">
               <span class="proj-name">{p.name}</span>
               <span class="proj-keys-n">{p.key_count ?? (keys[p.id]?.length ?? 0)} keys</span>
               {p.storage && (
-                <span class="proj-keys-n" title="observations 分区数/保留上限 · 文件总容量">
-                  {p.storage.partitionCount}/{p.max_partitions ?? p.storage.maxPartitions} 分区 · {fmtBytes(p.storage.totalBytes)}
+                <span class="proj-keys-n" title="observation partitions / retention · total size">
+                  {p.storage.partitionCount}/{p.max_partitions ?? p.storage.maxPartitions} parts · {fmtBytes(p.storage.totalBytes)}
                 </span>
               )}
               <span class="proj-actions">
                 <button class="ghost" onClick={() => {
                   if (keys[p.id]) setKeys((k: any) => { const n = { ...k }; delete n[p.id]; return n; });
                   else loadKeys(p.id);
-                }}>{keys[p.id] ? "收起" : "查看"}</button>
-                <button class="ghost" onClick={() => { setKeyName(""); setNamingFor(p); }}>新增 key</button>
+                }}>{keys[p.id] ? "Hide" : "View"}</button>
+                <button class="ghost" onClick={() => { setKeyName(""); setNamingFor(p); }}>Add key</button>
                 <span class="menu-wrap">
-                  <button class="ghost" style="padding:4px 10px" title="更多"
+                  <button class="ghost" style="padding:4px 10px" title="More"
                     onClick={(e: any) => { e.stopPropagation(); setMenuPid(menuPid === p.id ? null : p.id); }}>⋯</button>
                   {menuPid === p.id && (
                     <span class="menu">
                       <span class="mi" style="color:var(--text)" onClick={() => safe(async () => {
                         setMenuPid(null);
                         const cur = p.max_partitions ?? p.max_shards ?? 3;
-                        const v = prompt(`保留几个 observations 分区(3-20,每个上限 1GB,当前 ${cur})`, String(cur));
+                        const v = prompt(`Observation partitions to keep (3-20, 1GB each, current ${cur})`, String(cur));
                         if (v == null) return;
                         const n = Number(v);
-                        if (!Number.isFinite(n) || n < 3 || n > 20) { setError("请输入 3-20 之间的数字"); return; }
+                        if (!Number.isFinite(n) || n < 3 || n > 20) { setError("Enter a number between 3 and 20"); return; }
                         await api(`/api/v1/admin/projects/${p.id}`, { method: "PATCH", body: JSON.stringify({ maxPartitions: n }) });
                         refresh();
-                      })}>设置保留分区数…</span>
+                      })}>Retention settings…</span>
                       <span class="mi" onClick={() => safe(async () => {
                         setMenuPid(null);
-                        if (confirm(`删除 project "${p.name}"?数据文件一并删除`)) {
+                        if (confirm(`Delete project "${p.name}"? Its data files will be removed too`)) {
                           await api(`/api/v1/admin/projects/${p.id}`, { method: "DELETE" });
                           refresh(); onChanged();
                         }
-                      })}>删除项目…</span>
+                      })}>Delete project…</span>
                     </span>
                   )}
                 </span>
@@ -1802,7 +1802,7 @@ function AdminPage({ onChanged, onBack }: { onChanged: () => void; onBack: () =>
             </div>
             {keys[p.id] && (
               <div class="keylist">
-                {keys[p.id].length === 0 && <div class="muted" style="font-size:12px;padding:4px 0">暂无 key,点上方「新增 key」生成</div>}
+                {keys[p.id].length === 0 && <div class="muted" style="font-size:12px;padding:4px 0">No keys yet — click "Add key" above to create one</div>}
                 {keys[p.id].map((k: any) => (
                   <div class={`keyrow ${k.public_key === freshPk ? "fresh" : ""}`}>
                     <span class="dot" />
@@ -1812,26 +1812,26 @@ function AdminPage({ onChanged, onBack }: { onChanged: () => void; onBack: () =>
                     <button class="ghost" style="margin-left:auto;padding:2px 10px" onClick={() => safe(async () => {
                       await api(`/api/v1/admin/projects/${p.id}/keys/${k.id}`, { method: "DELETE" });
                       loadKeys(p.id); refresh();
-                    })}>吊销</button>
+                    })}>Revoke</button>
                   </div>
                 ))}
               </div>
             )}
           </div>
         ))}
-        {!projects.length && <div class="empty">还没有项目 — 上面新建一个</div>}
+        {!projects.length && <div class="empty">No projects yet — create one above</div>}
       </div>
       {namingFor && (
         <div class="modal-mask" onClick={() => setNamingFor(null)}>
           <div class="modal" onClick={(e: any) => e.stopPropagation()}>
-            <h4>新增接入 key</h4>
-            <div class="sub">给 key 起个名字,方便记住它用在哪(项目:{namingFor.name})</div>
-            <input placeholder="如:本地调试 / 生产接入 / cappy-agent" value={keyName}
+            <h4>Add access key</h4>
+            <div class="sub">Name the key so you remember where it is used (project: {namingFor.name})</div>
+            <input placeholder="e.g. local dev / production / cappy-agent" value={keyName}
               onInput={(e: any) => setKeyName(e.target.value)}
               onKeyDown={(e: any) => { if (e.key === "Enter" && namingFor) mkKey(); }} />
             <div class="btns">
-              <button class="ghost" onClick={() => setNamingFor(null)}>取消</button>
-              <button onClick={() => mkKey()}>创建 key</button>
+              <button class="ghost" onClick={() => setNamingFor(null)}>Cancel</button>
+              <button onClick={() => mkKey()}>Create key</button>
             </div>
           </div>
         </div>
@@ -1872,7 +1872,7 @@ function App() {
   if (view === "admin") {
     return <AdminPage onChanged={refreshProjects} onBack={() => { location.hash = "#/"; setView("work"); }} />;
   }
-  if (projects === null) return <div class="empty" style="height:100vh;display:flex;align-items:center;justify-content:center">加载中…</div>;
+  if (projects === null) return <div class="empty" style="height:100vh;display:flex;align-items:center;justify-content:center">Loading…</div>;
   if (!projects.length) {
     return <AdminPage onChanged={refreshProjects} onBack={() => { refreshProjects(); }} />;
   }
