@@ -448,7 +448,7 @@ function ProjectPicker({ projects, projectId, onChange }: { projects: Project[];
   return (
     <div class="dd">
       <button class="dd-btn" onClick={(e: any) => { e.stopPropagation(); setOpen(!open); }}>
-        <span class="nm">◆ {cur?.name ?? "选择项目"}</span>
+        <span class="nm">● {cur?.name ?? "选择项目"}</span>
       </button>
       {open && (
         <div class="dd-menu">
