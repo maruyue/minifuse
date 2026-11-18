@@ -212,6 +212,10 @@ border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;user-
 .tool-def-name{font-size:12.5px;font-weight:600;color:var(--text);font-family:ui-monospace,Menlo,monospace}
 .tool-def-desc{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .tool-def-body{padding:2px 2px 8px 20px;display:flex;flex-direction:column;gap:6px}
+/* session 筛选框 */
+.sess-search{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:5px 8px;outline:none}
+.sess-search:focus{border-color:var(--accent)}
+.sess-search::placeholder{color:var(--muted)}
 /* 详情面板快速滚动按钮 */
 .fastbtns{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
 .fastbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,color .15s}
@@ -1420,6 +1424,18 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
   const [projectId, setProjectId] = useState(() => initQ.get("project") ?? $<string>("mf_project") ?? projects[0]?.id);
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(initQ.get("session")); // null = 全部 traces
+  // session 筛选:按 project 存 localStorage,下次进来保留
+  const [sessFilter, setSessFilter] = useState(() => localStorage.getItem(`mf_sessfilter:${projectId}`) ?? "");
+  useEffect(() => {
+    setSessFilter(localStorage.getItem(`mf_sessfilter:${projectId}`) ?? "");
+  }, [projectId]);
+  const onSessFilterInput = (v: string) => {
+    setSessFilter(v);
+    if (projectId) localStorage.setItem(`mf_sessfilter:${projectId}`, v);
+  };
+  const shownSessions = sessFilter.trim()
+    ? sessions.filter((s) => String(s.id).toLowerCase().includes(sessFilter.trim().toLowerCase()))
+    : sessions;
   const [traces, setTraces] = useState<any[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [traceId, setTraceId] = useState<string | null>(initQ.get("trace"));
@@ -1513,16 +1529,26 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
           </div>
           <div class="sess-scroll">
             <div class="colhead">Sessions</div>
+            <div style="padding:0 10px 6px">
+              <input class="sess-search" placeholder="按 session-id 片段筛选…" value={sessFilter}
+                onInput={(e: any) => onSessFilterInput(e.target.value)} />
+              {sessFilter && (
+                <div class="muted" style="font-size:11px;padding:4px 2px 0">
+                  {shownSessions.length}/{sessions.length} 个 session 匹配
+                </div>
+              )}
+            </div>
             <div class={`sess-item ${sessionId === null ? "sel" : ""}`} onClick={() => setSessionId(null)}>
               <div class="n">全部 traces</div>
               <div class="m">不过滤 session</div>
             </div>
-            {sessions.map((s) => (
+            {shownSessions.map((s) => (
               <div class={`sess-item ${sessionId === s.id ? "sel" : ""}`} onClick={() => setSessionId(s.id)}>
                 <div class="n" title={s.id}>{s.id}</div>
                 <div class="m">{s.trace_count_now ?? s.trace_count} traces · {fmtCost(s.total_cost)}<br />最近 {fmtTs(s.last_ts)}</div>
               </div>
             ))}
+            {sessions.length > 0 && !shownSessions.length && <div class="empty" style="padding:14px">没有匹配的 session</div>}
             {!sessions.length && <div class="empty" style="padding:14px">暂无 session<br /><span style="font-size:11px">带 sessionId 的 trace 会自动聚合</span></div>}
           </div>
           <button class="theme-toggle" onClick={onToggleTheme} title="切换深色/浅色主题">
