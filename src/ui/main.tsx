@@ -318,9 +318,16 @@ td{padding:8px;border-bottom:1px solid var(--bg3)}
 
 .col-sessions{display:flex;flex-direction:column;overflow:hidden}
 .sess-scroll{flex:1;overflow-y:auto;min-height:0}
-.theme-toggle{margin:8px 10px 10px;padding:5px 12px;border-radius:8px;flex:none;
-background:var(--bg2);border:1px solid var(--border2);color:var(--text);cursor:pointer;font-family:inherit;font-size:12px}
+.theme-toggle{width:calc(100% - 20px);margin:8px 10px 10px;padding:6px 12px;border-radius:8px;flex:none;
+background:var(--bg2);border:1px solid var(--border2);color:var(--text);cursor:pointer;font-family:inherit;font-size:12px;text-align:center}
 .theme-toggle:hover{border-color:var(--accent);color:var(--link)}
+.settings-wrap{position:relative;flex:none}
+.settings-menu{position:absolute;bottom:calc(100% + 6px);left:10px;right:10px;background:var(--input-bg);
+border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.32);z-index:60;padding:4px}
+.settings-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text)}
+.settings-item:hover{background:var(--hover)}
+.settings-ico{width:18px;text-align:center;flex:none}
+.settings-cur{margin-left:auto;color:var(--muted);font-size:11px}
 .pp{display:flex;gap:8px;padding:10px 12px 6px;flex:none;align-items:stretch}
 .dd{position:relative;flex:1;min-width:0}
 .dd-btn{width:100%;text-align:left;display:flex;align-items:center;gap:8px;padding:8px 28px 8px 12px;min-height:36px;
@@ -337,11 +344,6 @@ padding:4px;max-height:280px;overflow:auto}
 .dd-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px}
 .dd-item:hover{background:var(--hover)}
 .dd-item.on{background:var(--sel);font-weight:600}
-.gear{flex:none;width:42px;min-height:36px;display:flex;align-items:center;justify-content:center;
-background:var(--input-bg);border:1px solid var(--border2);border-radius:8px;
-color:var(--muted);cursor:pointer;box-shadow:var(--input-shadow)}
-.gear svg{display:block}
-.gear:hover{color:var(--link);border-color:var(--accent)}
 `;
 
 /* ---------------- helpers ---------------- */
@@ -991,6 +993,40 @@ function FastScrollButtons({ containerRef }: { containerRef: { current: HTMLElem
   );
 }
 
+/** 底部「设置」按钮 + 弹出菜单:外观主题切换 / 项目管理 */
+function SettingsMenu({ theme, onToggleTheme, onAdmin }: { theme: string; onToggleTheme: () => void; onAdmin: () => void }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest(".settings-wrap")) setOpen(false);
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
+  return (
+    <div class="settings-wrap" ref={wrapRef}>
+      {open && (
+        <div class="settings-menu">
+          <div class="settings-item" onClick={() => { onToggleTheme(); setOpen(false); }}>
+            <span class="settings-ico">{theme === "dark" ? "🌙" : "☀️"}</span>
+            <span>外观主题</span>
+            <span class="settings-cur">{theme === "dark" ? "深色" : "浅色"}</span>
+          </div>
+          <div class="settings-item" onClick={() => { setOpen(false); onAdmin(); }}>
+            <span class="settings-ico">🗂</span>
+            <span>项目管理</span>
+          </div>
+        </div>
+      )}
+      <button class="theme-toggle" onClick={() => setOpen(!open)} title="设置">
+        ⚙ 设置
+      </button>
+    </div>
+  );
+}
+
 function PrettyText({ text, limit = 900, md = false }: { text: string; limit?: number; md?: boolean }) {
   const [open, setOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -1554,9 +1590,6 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
         <div class="col col-sessions">
           <div class="pp">
             <ProjectPicker projects={projects} projectId={projectId} onChange={setProjectId} />
-            <button class="gear" onClick={onAdmin} title="管理项目">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </button>
           </div>
           <div class="sess-scroll">
             <div class="colhead">Sessions</div>
@@ -1583,9 +1616,7 @@ function Workspace({ projects, onAdmin, theme, onToggleTheme }: { projects: Proj
             )}
             {!sessions.length && !sessFilter && <div class="empty" style="padding:14px">暂无 session<br /><span style="font-size:11px">带 sessionId 的 trace 会自动聚合</span></div>}
           </div>
-          <button class="theme-toggle" onClick={onToggleTheme} title="切换深色/浅色主题">
-            {theme === "dark" ? "🌙 dark" : "☀️ light"}
-          </button>
+          <SettingsMenu theme={theme} onToggleTheme={onToggleTheme} onAdmin={onAdmin} />
           <FoldHandle dir="left" onClick={() => setFoldSess(true)} title="收起 Sessions" />
         </div>
       )}
