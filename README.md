@@ -1,16 +1,16 @@
 # minifuse
 
-最轻量的 agent trace 查看工具 —— only trace,单进程,零外部依赖。
+轻量的 LLM / agent trace 查看工具。单进程,仅依赖 SQLite,无外部服务。
 
-如果你喜欢 [Langfuse](https://langfuse.com) / Litefuse 的思路,却嫌它们太重:要跑一堆中间件、配数据库和对象存储,而你要的只是**一个能看 agent trace 的地方** —— 那就是它了。
+如果你喜欢 Langfuse 的可观测性思路,但只需要一个查看 trace 的简单工具,minifuse 是一个更轻的选择。
 
-**为什么轻**
+## 特性
 
-- **完全兼容 Langfuse 协议** —— OTLP HTTP(protobuf / JSON)与 REST batch 端点,现有 Langfuse 接入改个地址就能用
-- **只用 SQLite** —— TypeScript(Bun)编写,单进程运行;没有 Postgres / Redis / ClickHouse / 对象存储
-- **一项目一文件** —— 每个项目一个独立的 SQLite 文件,删除项目即删除文件,不留残余
-- **滚动分区,自动过期** —— observations 按容量滚动成 `observations_1`、`observations_2`…(类似滚动日志),超过保留数量自动删除最旧的,不用担心撑爆磁盘
-- **内嵌 Web UI** —— trace 列表、调用树、session 聚合、Formatted / JSON 双视图,全部打进单一二进制
+- **兼容 Langfuse 协议** — 支持 OTLP HTTP(protobuf / JSON)与 REST batch 接入,现有 Langfuse 集成仅需修改地址与密钥
+- **SQLite 存储** — 基于 Bun 与 TypeScript 构建,单进程运行,无需 Postgres / Redis / ClickHouse 等外部服务
+- **多项目隔离** — 每个项目对应一个独立的 SQLite 文件,删除项目即删除文件
+- **分区滚动与自动过期** — observations 按容量滚动为 `observations_1`、`observations_2`…,超过保留数量自动删除最旧分区,避免数据无限增长
+- **内嵌 Web UI** — 提供 trace 列表、调用树、session 聚合与 Formatted / JSON 双视图,随二进制一同分发
 
 ![minifuse UI](docs/screenshot.png)
 
@@ -19,21 +19,21 @@
 ```bash
 git clone https://github.com/maruyue/minifuse.git
 cd minifuse
-./build.sh        # 产出单一二进制 ./minifuse(需 Bun)
+./build.sh        # 构建单一二进制 ./minifuse(需要 Bun)
 ```
 
-## 启动
+## 运行
 
 ```bash
-./minifuse                                              # 监听 0.0.0.0:3000,数据在 ./data
-MINIFUSE_PORT=9000 MINIFUSE_DATA=~/minifuse-data ./minifuse
+MINIFUSE_PORT=3000 MINIFUSE_HOST=0.0.0.0 MINIFUSE_DATA=./data ./minifuse
+MINIFUSE_PORT=9000 MINIFUSE_HOST=0.0.0.0 MINIFUSE_DATA=~/minifuse-data ./minifuse
 ```
 
 ## 接入
 
-先在 Web UI(`http://localhost:3000/ui`)创建一个项目,生成一对 access key,然后按你的接入方式配置:
+在 Web UI 中创建项目并生成 access key 后,按以下方式接入:
 
-**OpenTelemetry(任意 OTel 应用)**
+**OpenTelemetry**
 
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:3000/api/public/otel"
@@ -41,11 +41,11 @@ export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"     # 或 http/json
 export OTEL_EXPORTER_OTLP_HEADERS="authorization=Basic <base64(pk:sk)>"
 ```
 
-**Langfuse SDK(Python / JS)**
+**Langfuse SDK(Python)**
 
 ```python
-# Python
 from langfuse import Langfuse
+
 langfuse = Langfuse(
     public_key="pk-lf-...",
     secret_key="sk-lf-...",
@@ -53,9 +53,11 @@ langfuse = Langfuse(
 )
 ```
 
+**Langfuse SDK(TypeScript)**
+
 ```ts
-// TypeScript
 import { Langfuse } from "langfuse";
+
 const langfuse = new Langfuse({
   publicKey: "pk-lf-...",
   secretKey: "sk-lf-...",
@@ -63,7 +65,7 @@ const langfuse = new Langfuse({
 });
 ```
 
-**Langfuse REST API**
+**REST API**
 
 ```bash
 curl -X POST http://localhost:3000/api/public/traces \
@@ -72,11 +74,9 @@ curl -X POST http://localhost:3000/api/public/traces \
   -d '{"batch": [{"id": "trace-1", "name": "my-trace"}]}'
 ```
 
-上报后,打开 UI 按 session / trace 浏览即可。
-
 ## 环境变量
 
-| 变量 | 默认 | 说明 |
+| 变量 | 默认值 | 说明 |
 |---|---|---|
 | `MINIFUSE_PORT` | 3000 | 监听端口 |
 | `MINIFUSE_HOST` | 0.0.0.0 | 监听地址 |
