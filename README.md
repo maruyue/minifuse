@@ -9,7 +9,7 @@
 - **兼容 Langfuse 协议** — 支持 OTLP HTTP(protobuf / JSON)与 REST batch 接入,现有 Langfuse 集成仅需修改地址与密钥
 - **SQLite 存储** — 基于 Bun 与 TypeScript 构建,单进程运行,无需 Postgres / Redis / ClickHouse 等外部服务
 - **多项目隔离** — 每个项目对应一个独立的 SQLite 文件,删除项目即删除文件
-- **分区滚动与自动过期** — observations 按容量滚动为 `observations_1`、`observations_2`…,超过保留数量自动删除最旧分区,避免数据无限增长
+- **trace 表滚动与自动过期** — trace 数据按容量滚动为多张表(类似滚动日志文件),超过保留数量自动删除最旧分区,避免数据无限增长
 - **内嵌 Web UI** — 提供 trace 列表、调用树、session 聚合与 Formatted / JSON 双视图,随二进制一同分发
 
 ![minifuse UI](docs/screenshot.png)
@@ -26,7 +26,6 @@ cd minifuse
 
 ```bash
 MINIFUSE_PORT=3000 MINIFUSE_HOST=0.0.0.0 MINIFUSE_DATA=./data ./minifuse
-MINIFUSE_PORT=9000 MINIFUSE_HOST=0.0.0.0 MINIFUSE_DATA=~/minifuse-data ./minifuse
 ```
 
 ## 接入
