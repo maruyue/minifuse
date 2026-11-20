@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build:ui": "bun build src/ui/main.tsx --minify --outdir dist/ui --format iife",
-    "build": "bun run build:ui && bun build --compile --minify src/main.ts --outfile minifuse",
+    "build": "bun run scripts/build.ts",
     "test": "bun test"
   },
   "dependencies": {
