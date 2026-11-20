@@ -1,8 +1,10 @@
 # minifuse
 
-轻量的 LLM / agent trace 查看工具。单进程,仅依赖 SQLite,无外部服务。
+最轻量的 LLM / Agent trace 查看工具。开发和调试 Agent 的必备工具。
 
-如果你喜欢 Langfuse 的可观测性思路,但只需要一个查看 trace 的简单工具,minifuse 是一个更轻的选择。
+单进程,仅依赖 SQLite,无外部服务。
+
+如果你喜欢 Langfuse/Litefuse 的可观测性思路, 但只需要一个查看 trace 的简单工具, 其他大量功能不喜欢。minifuse 是一个更轻的选择。
 
 ## 特性
 
