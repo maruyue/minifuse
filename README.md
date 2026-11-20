@@ -1,48 +1,46 @@
 # minifuse
 
-最轻量的 LLM / Agent trace 查看工具。开发和调试 Agent 的必备工具。
+The lightest LLM / agent trace viewer. An essential tool for developing and debugging agents. Single process, SQLite as the only dependency, no external services.
 
-单进程,仅依赖 SQLite,无外部服务。
+If you like the observability approach of [Langfuse](https://langfuse.com) but only need a simple place to view traces, minifuse is a much lighter alternative.
 
-如果你喜欢 Langfuse/Litefuse 的可观测性思路, 但只需要一个查看 trace 的简单工具, 其他大量功能不喜欢。minifuse 是一个更轻的选择。
+## Features
 
-## 特性
-
-- **兼容 Langfuse 协议** — 支持 OTLP HTTP(protobuf / JSON)与 REST batch 接入,现有 Langfuse 集成仅需修改地址与密钥
-- **SQLite 存储** — 基于 Bun 与 TypeScript 构建,单进程运行,无需 Postgres / Redis / ClickHouse 等外部服务
-- **多项目隔离** — 每个项目对应一个独立的 SQLite 文件,删除项目即删除文件
-- **trace 表滚动与自动过期** — trace 数据按容量滚动为多张表(类似滚动日志文件),超过保留数量自动删除最旧分区,避免数据无限增长
-- **内嵌 Web UI** — 提供 trace 列表、调用树、session 聚合与 Formatted / JSON 双视图,随二进制一同分发
+- **Langfuse-compatible** — OTLP HTTP (protobuf / JSON) and REST batch endpoints. Existing Langfuse integrations work by changing the URL and keys
+- **SQLite only** — Built with Bun and TypeScript, runs as a single process; no Postgres, Redis, ClickHouse or object storage
+- **Multi-project isolation** — Each project gets its own SQLite file; deleting a project deletes the file
+- **Rolling trace tables with auto-expiry** — Trace data rolls into new tables as it grows (like rotating log files); the oldest partitions are deleted automatically once the retention limit is reached
+- **Embedded Web UI** — Trace list, call tree, session aggregation and Formatted / JSON views, all bundled into a single binary
 
 ![minifuse UI](docs/screenshot.png)
 
-## 安装
+## Install
 
 ```bash
 git clone https://github.com/maruyue/minifuse.git
 cd minifuse
-./build.sh        # 构建单一二进制 ./minifuse(需要 Bun)
+./build.sh        # builds the single binary ./minifuse (requires Bun)
 ```
 
-## 运行
+## Run
 
 ```bash
 MINIFUSE_PORT=3000 MINIFUSE_HOST=0.0.0.0 MINIFUSE_DATA=./data ./minifuse
 ```
 
-## 接入
+## Integrate
 
-在 Web UI 中创建项目并生成 access key 后,按以下方式接入:
+Create a project in the Web UI and generate an access key, then configure your agent:
 
 **OpenTelemetry**
 
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:3000/api/public/otel"
-export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"     # 或 http/json
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"     # or http/json
 export OTEL_EXPORTER_OTLP_HEADERS="authorization=Basic <base64(pk:sk)>"
 ```
 
-**Langfuse SDK(Python)**
+**Langfuse SDK (Python)**
 
 ```python
 from langfuse import Langfuse
@@ -54,7 +52,7 @@ langfuse = Langfuse(
 )
 ```
 
-**Langfuse SDK(TypeScript)**
+**Langfuse SDK (TypeScript)**
 
 ```ts
 import { Langfuse } from "langfuse";
@@ -75,13 +73,13 @@ curl -X POST http://localhost:3000/api/public/traces \
   -d '{"batch": [{"id": "trace-1", "name": "my-trace"}]}'
 ```
 
-## 环境变量
+## Environment Variables
 
-| 变量 | 默认值 | 说明 |
+| Variable | Default | Description |
 |---|---|---|
-| `MINIFUSE_PORT` | 3000 | 监听端口 |
-| `MINIFUSE_HOST` | 0.0.0.0 | 监听地址 |
-| `MINIFUSE_DATA` | ./data | 数据目录 |
+| `MINIFUSE_PORT` | 3000 | Listen port |
+| `MINIFUSE_HOST` | 0.0.0.0 | Listen address |
+| `MINIFUSE_DATA` | ./data | Data directory |
 
 ## License
 
