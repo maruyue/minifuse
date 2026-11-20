@@ -2,7 +2,7 @@
 
 The lightest LLM / agent trace viewer. An essential tool for developing and debugging agents. Single process, SQLite as the only dependency, no external services.
 
-If you like the observability approach of [Langfuse](https://langfuse.com) but only need a simple place to view traces, minifuse is a much lighter alternative.
+If you like the observability approach of [Langfuse](https://langfuse.com) / Litefuse, but only need a simple place to view traces — and dislike the large set of other features — minifuse is a lighter alternative.
 
 ## Features
 
