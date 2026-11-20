@@ -1,6 +1,5 @@
 // 服务入口:装配 db + app,启动 Bun.serve。
 // 默认监听 0.0.0.0(局域网/虚拟机可接入);摄入走 pk/sk 认证。
-// 管理端点默认无认证(本机单用户场景);设 MINIFUSE_ADMIN_TOKEN 可选启用认证。
 
 import { openMeta, getProjectStore, maintainProjectStorage } from "./db";
 import { buildApp } from "./api";
@@ -10,7 +9,6 @@ const MAINTENANCE_INTERVAL_MS = 15 * 60 * 1000; // 每 15 分钟
 
 export async function startServer(opts: { port: number; dataDir: string }) {
   const meta = openMeta(opts.dataDir);
-  const adminToken = process.env.MINIFUSE_ADMIN_TOKEN || null; // 可选:设置后管理 API/UI 需要 Bearer
 
   // 启动前把旧 shard 文件迁移到单库 data.db;迁移失败则中止启动,避免带病服务。
   const projects = meta.db.query("SELECT id, name FROM projects").all() as Array<{ id: string; name: string }>;
@@ -23,7 +21,7 @@ export async function startServer(opts: { port: number; dataDir: string }) {
     }
   }
 
-  const app = buildApp(meta, loadUiAssets(), { adminToken });
+  const app = buildApp(meta, loadUiAssets());
 
   const host = process.env.MINIFUSE_HOST ?? "0.0.0.0";
   Bun.serve({ port: opts.port, hostname: host, fetch: app.fetch });
@@ -58,6 +56,4 @@ export async function startServer(opts: { port: number; dataDir: string }) {
 
   console.log(`minifuse listening on http://${host}:${opts.port}  (UI: /ui)`);
   console.log(`data dir: ${opts.dataDir}`);
-  if (adminToken) console.log("admin auth: ENABLED (MINIFUSE_ADMIN_TOKEN)");
-  else console.log("admin auth: off — 摄入用 pk/sk;管理端点无认证,对外暴露请设置 MINIFUSE_ADMIN_TOKEN");
 }

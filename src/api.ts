@@ -1,6 +1,5 @@
 // HTTP API:Hono 路由 + Langfuse 兼容认证(Basic pk:sk)。
 // 默认监听 0.0.0.0:摄入端点(pk/sk)对外安全;管理端点默认无认证,
-// 设置 MINIFUSE_ADMIN_TOKEN 后管理端点启用 Bearer 认证。
 
 import { Hono } from "hono";
 import { createHash } from "node:crypto";
@@ -46,21 +45,9 @@ function publicKeyAuth(meta: MetaDb) {
   };
 }
 
-/** 可选管理认证:adminToken 非空时启用 Bearer 校验 */
-function optionalAdminAuth(adminToken: string | null) {
-  return async (c: any, next: () => Promise<void>) => {
-    if (!adminToken) return next();
-    const header = c.req.header("authorization") ?? "";
-    const token = /^Bearer\s+(.+)$/i.exec(header)?.[1] ?? c.req.query("admin_token");
-    if (token !== adminToken) return c.json({ error: "Unauthorized", message: "Invalid admin token" }, 401);
-    await next();
-  };
-}
-
 export function buildApp(
   meta: MetaDb,
   uiAssets: { js: string; css: string },
-  opts?: { adminToken?: string | null },
 ) {
   const app = new Hono<AppEnv>();
   const pkAuth = publicKeyAuth(meta);
@@ -116,9 +103,8 @@ export function buildApp(
     return c.json({ status: "success" });
   });
 
-  // ---------- 管理 API(默认无认证;MINIFUSE_ADMIN_TOKEN 可选启用) ----------
+  // ---------- 管理 API ----------
   const admin = new Hono();
-  admin.use("*", optionalAdminAuth(opts?.adminToken ?? null));
 
   admin.get("/projects", (c) => {
     const rows = meta.db

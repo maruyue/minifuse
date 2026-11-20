@@ -46,7 +46,10 @@ trace 上报后,在 UI 里按 session / trace 浏览即可。
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `PORT` | 3000 | 监听端口 |
+| `MINIFUSE_PORT` | 3000 | 监听端口 |
 | `MINIFUSE_DATA` | ./data | 数据目录 |
 | `MINIFUSE_HOST` | 0.0.0.0 | 监听地址 |
-| `MINIFUSE_ADMIN_TOKEN` | 关闭 | 设置后管理操作需要 Bearer token |
+
+## License
+
+Apache License 2.0
